@@ -15,6 +15,10 @@ let package = Package(
             name: "Extensions",
             targets: ["Extensions"]
         ),
+        .library(
+            name: "XcodeGen",
+            targets: ["XcodeGen"]
+        ),
         .executable(
             name: "swiftsheetgen",
             targets: ["SwiftSheetGenCLI"]
@@ -31,10 +35,20 @@ let package = Package(
             path: "Sources/Extensions"
         ),
         
+        // MARK: - Xcode Project Generator
+        .target(
+            name: "XcodeGen",
+            dependencies: ["Extensions"],
+            path: "Sources/XcodeGen"
+        ),
+        
         // MARK: - Core Library
         .target(
             name: "SheetLocalizer",
-            dependencies: ["Extensions"],
+            dependencies: [
+                "Extensions",
+                "XcodeGen"
+            ],
             path: "Sources/SheetLocalizer"
         ),
         
@@ -44,6 +58,7 @@ let package = Package(
             dependencies: [
                 "SheetLocalizer",
                 "Extensions",
+                "XcodeGen",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
             path: "Sources/SwiftSheetGenCLI"
@@ -54,7 +69,8 @@ let package = Package(
             name: "SheetLocalizerTests",
             dependencies: [
                 "SheetLocalizer",
-                "Extensions"
+                "Extensions",
+                "XcodeGen"
             ],
             path: "Tests/SheetLocalizer"
         )

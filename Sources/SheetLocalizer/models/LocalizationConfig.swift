@@ -7,37 +7,43 @@ public struct LocalizationConfig: Sendable {
     public let enumName: String
     public let sourceDirectory: String
     public let csvFileName: String
+    public let autoAddToXcode: Bool
     
     public init(
         outputDirectory: String,
         enumName: String,
         sourceDirectory: String,
-        csvFileName: String
+        csvFileName: String,
+        autoAddToXcode: Bool = true
     ) {
         self.outputDirectory = outputDirectory
         self.enumName = enumName
         self.sourceDirectory = sourceDirectory
         self.csvFileName = csvFileName
+        self.autoAddToXcode = autoAddToXcode
     }
     
     public static let `default` = LocalizationConfig(
         outputDirectory: "./",
         enumName: "L10n",
         sourceDirectory: "./Sources/SheetLocalizer",
-        csvFileName: "localizables.csv"
+        csvFileName: "localizables.csv",
+        autoAddToXcode: true
     )
     
     public static func custom(
         outputDirectory: String = "./",
         enumName: String = "L10n",
         sourceDirectory: String = "./Sources/SheetLocalizer",
-        csvFileName: String = "localizables.csv"
+        csvFileName: String = "localizables.csv",
+        autoAddToXcode: Bool = true
     ) -> LocalizationConfig {
         LocalizationConfig(
             outputDirectory: outputDirectory,
             enumName: enumName,
             sourceDirectory: sourceDirectory,
-            csvFileName: csvFileName
+            csvFileName: csvFileName,
+            autoAddToXcode: autoAddToXcode
         )
     }
 }

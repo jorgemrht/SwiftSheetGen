@@ -1,5 +1,6 @@
 import Foundation
 import Extensions
+import XcodeGen
 
 // MARK: - Localization Generator
 
@@ -45,6 +46,10 @@ public struct LocalizationGenerator: Sendable {
         
         try Task.checkCancellation()
         try await generateSwiftEnum(allKeys: allKeys)
+        
+        if config.autoAddToXcode {
+            try await addGeneratedFilesToXcode(languages: languages)
+        }
     }
 
     // MARK: - CSV Processing
@@ -290,4 +295,42 @@ public struct LocalizationGenerator: Sendable {
         let prefix = camel.first?.isNumber == true || camel.isEmpty ? "_" : ""
         return prefix + camel
     }
+    
+    // MARK: - Generated Files To Xcode
+    
+    private func addGeneratedFilesToXcode(languages: [String]) async throws {
+            Self.logger.info("Auto-adding generated files to Xcode project...")
+            
+            let currentDir = FileManager.default.currentDirectoryPath
+            let searchPaths = [
+                currentDir,
+                "\(currentDir)/..",
+                "\(currentDir)/../.."
+            ]
+            
+            for searchPath in searchPaths {
+                let resolvedPath = URL(fileURLWithPath: searchPath).standardized.path
+                
+                do {
+                    let contents = try FileManager.default.contentsOfDirectory(atPath: resolvedPath)
+                    
+                    if let xcodeproj = contents.first(where: { $0.hasSuffix(".xcodeproj") }) {
+                        Self.logger.info("Found Xcode project: \(xcodeproj) in \(resolvedPath)")
+                        
+                        let generatedFiles = languages.map { "\(config.outputDirectory)/\($0).lproj/Localizable.strings" }
+                        
+                        try await XcodeProjectUpdater.addLocalizationFiles(
+                            projectPath: resolvedPath,
+                            generatedFiles: generatedFiles,
+                            languages: languages
+                        )
+                        return
+                    }
+                } catch {
+                    Self.logger.debug("Could not read directory: \(resolvedPath)")
+                }
+            }
+            
+            Self.logger.error("No .xcodeproj found in current or parent directories")
+        }
 }

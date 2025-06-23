@@ -25,6 +25,9 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
     @Flag(help: "Enable verbose logging")
     var verbose: Bool = false
     
+    @Flag(name: .long, help: "Skip adding generated files to Xcode project")
+    var skipXcode: Bool = false
+    
     // MARK: - Init Required
     public init() {}
     
@@ -35,7 +38,8 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
             outputDirectory: output,
             enumName: enumName,
             sourceDirectory: "\(output)/Sources/SheetLocalizer",
-            csvFileName: "localizables.csv"
+            csvFileName: "localizables.csv",
+            autoAddToXcode: !skipXcode
         )
         
         let csvPath = "\(FileManager.default.currentDirectoryPath)/localizables/\(config.csvFileName)"
@@ -46,6 +50,7 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
             print("   - Enum Name: \(enumName)")
             print("   - Output: \(output)")
             print("   - CSV Path: \(csvPath)")
+            print("   - Add to Xcode: \(!skipXcode)")
         }
         
         do {

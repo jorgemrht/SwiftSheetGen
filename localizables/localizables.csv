@@ -1,0 +1,15 @@
+Items a revisar,,,,Español
+Check,[View],[Item],[Type],es
+,[COMMENT],[ITEM],[TYPE],Common
+,common,app_name,text,jorgemrht
+,common,app_name_pre,text,jorgemrht PRE
+,common,language_code,text,es
+,[COMMENT],[ITEM],[TYPE],Login
+,login,title,text,Login
+,login,username,text,Usuario
+,login,password,text,Contraseña
+,login,send,button,Login
+,login,forgot_password,button,¿Contraseña olvidada?
+,login,sign up,text,¿No tienes cuenta?
+,login,sign up,button,Registrarse
+[END],,,,

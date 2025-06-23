@@ -1,10 +1,8 @@
-//
-//  Created by jorge on 20/6/25.
-//
 import Foundation
 
 // MARK: - Error Types
-enum SheetLocalizerError: Error, LocalizedError, Sendable {
+public enum SheetLocalizerError: Error, LocalizedError, Sendable {
+    
     case invalidURL(String)
     case networkError(String)
     case csvParsingError(String)
@@ -12,7 +10,7 @@ enum SheetLocalizerError: Error, LocalizedError, Sendable {
     case insufficientData
     case httpError(Int)
     
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .invalidURL(let url):
             return "URL inválida: \(url)"

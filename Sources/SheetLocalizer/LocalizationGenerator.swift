@@ -1,113 +1,179 @@
-//
-//  Created by jorge on 20/6/25.
-//
-
 import Foundation
+import Extensions
 
 // MARK: - Localization Generator
-//  LocalizationGenerator.swift
-import Foundation
 
-// MARK: - Localization Generator
 public struct LocalizationGenerator: Sendable {
     private let config: LocalizationConfig
-
+    private static let logger = Logger(category: "LocalizationGenerator")
+    
     public init(config: LocalizationConfig = .default) {
         self.config = config
     }
 
     public func generate(from csvPath: String) async throws {
         try Task.checkCancellation()
-        print("🔄 Processing CSV: \(csvPath)")
-
+        Self.logger.info("Processing CSV: \(csvPath)")
+        
         let content = try String(contentsOfFile: csvPath, encoding: .utf8)
         let rows = try CSVParser.parse(content)
-
+        
+        try validateCSVStructure(rows)
+        
         guard rows.count > 3 else {
             throw SheetLocalizerError.insufficientData
         }
 
         let (languages, entries) = try processRows(rows)
-
+        
         guard !languages.isEmpty else {
             throw SheetLocalizerError.csvParsingError("No valid languages were found")
         }
+
         guard !entries.isEmpty else {
             throw SheetLocalizerError.csvParsingError("No valid entries found")
         }
 
-        print("🌐 Detected languages: [\(languages.joined(separator: ", "))]")
-        print("📝 Detected entries: \(entries.count)")
-
+        Self.logger.info("Detected languages: [\(languages.joined(separator: ", "))]")
+        Self.logger.info("Detected entries: \(entries.count)")
+        
         try Task.checkCancellation()
         try await generateLocalizationFiles(languages: languages, entries: entries)
-
+        
         try Task.checkCancellation()
         let allKeys = Set(entries.map(\.key)).sorted()
+        
         try Task.checkCancellation()
         try await generateSwiftEnum(allKeys: allKeys)
     }
 
     // MARK: - CSV Processing
+
     private func processRows(_ rows: [[String]]) throws -> ([String], [LocalizationEntry]) {
         guard rows.count > 1 else {
             throw SheetLocalizerError.csvParsingError("CSV must have at least 2 rows")
         }
 
-        let header = rows[1]
+        // Find the header row with [View], [Item], [Type]
+        var headerRowIndex = -1
+        for (index, row) in rows.enumerated() {
+            if row.count > 4 &&
+               row[1].trimmed == "[View]" &&
+               row[2].trimmed == "[Item]" &&
+               row[3].trimmed == "[Type]" {
+                headerRowIndex = index
+                break
+            }
+        }
+        
+        guard headerRowIndex >= 0 else {
+            throw SheetLocalizerError.csvParsingError("Header row with [View], [Item], [Type] not found")
+        }
+        
+        let header = rows[headerRowIndex]
         guard header.count > 4 else {
             throw SheetLocalizerError.csvParsingError("Header must have at least 5 columns")
         }
 
+        // Extract languages from columns after [Type]
         let languages = Array(header.dropFirst(4))
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
+            .map { $0.trimmed }
+            .filter { !$0.isEmpty && !$0.hasPrefix("[") }
 
-        print("🌐 Idiomas detectados: \(languages)")
-
+        Self.logger.info("Detected languages: \(languages)")
+        
         var entries: [LocalizationEntry] = []
-
-        for row in rows.dropFirst(3) {
+        
+        // Process rows after header
+        for row in rows.dropFirst(headerRowIndex + 1) {
             if row.count < 5 { continue }
-            if row[1].trimmingCharacters(in: .whitespacesAndNewlines) == "[COMMENT]" { continue }
-            if row.first?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() == "[END]" { continue }
-
-            let cols = Array(row.dropFirst(1))
-            guard cols.count >= 3 else { continue }
-
-            let view = cols[0].trimmingCharacters(in: .whitespaces)
-            let item = cols[1].trimmingCharacters(in: .whitespaces)
-            let type = cols[2].trimmingCharacters(in: .whitespaces)
+            
+            // Skip comment and separator rows
+            let firstCol = row.first?.trimmed.uppercased() ?? ""
+            let secondCol = row.count > 1 ? row[1].trimmed.uppercased() : ""
+            
+            if firstCol == "[END]" { break }
+            if secondCol == "[COMMENT]" || secondCol.hasPrefix("[") { continue }
+            
+            // Extract view, item, type from columns 1, 2, 3
+            guard row.count >= 4 else { continue }
+            
+            let view = row[1].trimmed
+            let item = row[2].trimmed
+            let type = row[3].trimmed
+            
             guard !view.isEmpty && !item.isEmpty && !type.isEmpty else { continue }
-
-            let values = Array(cols.dropFirst(3))
+            guard !view.hasPrefix("[") && !item.hasPrefix("[") && !type.hasPrefix("[") else { continue }
+            
+            // Extract translations starting from column 4
+            let values = Array(row.dropFirst(4))
             var translations: [String: String] = [:]
-
+            
             for index in languages.indices {
                 if index < values.count {
-                    let val = values[index].trimmingCharacters(in: .whitespacesAndNewlines)
+                    let val = values[index].trimmed
                     if !val.isEmpty {
                         translations[languages[index]] = val
                     }
                 }
             }
-
+            
             guard !translations.isEmpty else { continue }
-
+            
             let entry = LocalizationEntry(
                 view: view,
                 item: item,
                 type: type,
                 translations: translations
             )
+            
             entries.append(entry)
         }
 
         return (languages, entries)
     }
 
+    // MARK: - CSV Structure Validation
+
+    private func validateCSVStructure(_ rows: [[String]]) throws {
+        guard rows.count >= 4 else {
+            throw SheetLocalizerError.csvParsingError("CSV must have at least 4 rows")
+        }
+        
+        // Look for header row with [View], [Item], [Type] structure
+        var foundValidHeader = false
+        
+        for row in rows {
+            if row.count >= 5 &&
+               row[1].trimmed == "[View]" &&
+               row[2].trimmed == "[Item]" &&
+               row[3].trimmed == "[Type]" {
+                foundValidHeader = true
+                
+                // Check for at least one language column
+                let languageColumns = Array(row.dropFirst(4))
+                    .map { $0.trimmed }
+                    .filter { !$0.isEmpty && !$0.hasPrefix("[") }
+                
+                guard !languageColumns.isEmpty else {
+                    throw SheetLocalizerError.csvParsingError("No language columns found after [Type] column")
+                }
+                
+                Self.logger.info("CSV Structure validated:")
+                Self.logger.info("  - Header found with structure: [View], [Item], [Type]")
+                Self.logger.info("  - Language columns: [\(languageColumns.joined(separator: ", "))]")
+                
+                break
+            }
+        }
+        
+        guard foundValidHeader else {
+            throw SheetLocalizerError.csvParsingError("Invalid CSV structure. Expected header row with [View], [Item], [Type] format")
+        }
+    }
 
     // MARK: - File Generation
+
     private func generateLocalizationFiles(languages: [String], entries: [LocalizationEntry]) async throws {
         try await withThrowingTaskGroup(of: Void.self) { group in
             for language in languages {
@@ -142,7 +208,7 @@ public struct LocalizationGenerator: Sendable {
         }.joined(separator: "\n")
 
         try content.write(toFile: filePath, atomically: true, encoding: .utf8)
-        print("✔️ Generated: \(filePath) (\(validEntries.count) entries)")
+        Self.logger.info("Generated: \(filePath) (\(validEntries.count) entries)")
     }
 
     private func generateSwiftEnum(allKeys: [String]) async throws {
@@ -155,19 +221,21 @@ public struct LocalizationGenerator: Sendable {
             withIntermediateDirectories: true,
             attributes: nil
         )
+
         try code.write(to: fileURL, atomically: true, encoding: .utf8)
-        print("✔️ Enum generated at: \(outputPath) (\(allKeys.count) cases)")
+        Self.logger.info("Enum generated at: \(outputPath) (\(allKeys.count) cases)")
     }
 
     // MARK: - Swift Enum Builder
+
     private func buildSwiftEnumCode(allKeys: [String]) async throws -> String {
         let formattedDate = Date().formatted(date: .abbreviated, time: .shortened)
         var code = """
         // Auto-generated by SheetLocalizer — do not edit
         // Generated on: \(formattedDate)
-
+        
         import Foundation
-
+        
         @frozen
         public enum \(config.enumName): String, CaseIterable, Sendable {
         """
@@ -178,34 +246,35 @@ public struct LocalizationGenerator: Sendable {
         }
 
         code += """
-
+        
             /// Returns the localized string for this key
             public var localized: String {
                 NSLocalizedString(self.rawValue, bundle: .main, comment: "")
             }
-
+            
             /// Returns a formatted localized string with arguments
             public func localized(_ args: CVarArg...) -> String {
                 String(format: localized, arguments: args)
             }
-        }
-
-        extension String {
-            /// Localizes the string key
-            public var localized: String {
-                NSLocalizedString(self, comment: "")
+            
+            /// Returns localized string with specific bundle
+            public func localized(bundle: Bundle) -> String {
+                NSLocalizedString(self.rawValue, bundle: bundle, comment: "")
             }
-
-            /// Localizes with formatting arguments
-            public func localized(_ args: CVarArg...) -> String {
-                String(format: NSLocalizedString(self, comment: ""), arguments: args)
+            
+            /// SwiftUI compatible computed property
+            @available(iOS 13.0, macOS 10.15, *)
+            public var localizedString: LocalizedStringKey {
+                LocalizedStringKey(self.rawValue)
             }
         }
         """
+
         return code
     }
 
     // MARK: - Identifier Sanitization
+
     private func generateSafeSwiftIdentifier(from key: String) -> String {
         let components = key
             .replacingOccurrences(of: "-", with: "_")
@@ -221,5 +290,3 @@ public struct LocalizationGenerator: Sendable {
         return prefix + camel
     }
 }
-
-

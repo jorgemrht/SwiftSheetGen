@@ -1,6 +1,4 @@
-//
-//  Created by jorge on 20/6/25.
-//
+import Foundation
 
 // MARK: - Configuration
 public struct LocalizationConfig: Sendable {
@@ -24,14 +22,14 @@ public struct LocalizationConfig: Sendable {
     
     public static let `default` = LocalizationConfig(
         outputDirectory: "./",
-        enumName: "JMR",
+        enumName: "JMRHT",
         sourceDirectory: "./Sources/SheetLocalizer",
         csvFileName: "localizables.csv"
     )
     
     public static func custom(
         outputDirectory: String = "./",
-        enumName: String = "JMR",
+        enumName: String = "JMRHT",
         sourceDirectory: String = "./Sources/SheetLocalizer",
         csvFileName: String = "localizables.csv"
     ) -> LocalizationConfig {

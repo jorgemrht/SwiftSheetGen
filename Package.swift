@@ -11,6 +11,10 @@ let package = Package(
             name: "SheetLocalizer",
             targets: ["SheetLocalizer"]
         ),
+        .library(
+            name: "Extensions",
+            targets: ["Extensions"]
+        ),
         .executable(
             name: "swiftsheetgen",
             targets: ["SwiftSheetGenCLI"]
@@ -20,20 +24,39 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.2.0")
     ],
     targets: [
+        // MARK: - Extension Module
+        .target(
+            name: "Extensions",
+            dependencies: [],
+            path: "Sources/Extensions"
+        ),
+        
+        // MARK: - Core Library
         .target(
             name: "SheetLocalizer",
-            dependencies: []
+            dependencies: ["Extensions"],
+            path: "Sources/SheetLocalizer"
         ),
+        
+        // MARK: - CLI Executable
         .executableTarget(
-            name: "SwiftSheetGenCLI",  //
+            name: "SwiftSheetGenCLI",
             dependencies: [
                 "SheetLocalizer",
+                "Extensions",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
-            ]
+            ],
+            path: "Sources/SwiftSheetGenCLI"
         ),
+        
+        // MARK: - Tests
         .testTarget(
             name: "SheetLocalizerTests",
-            dependencies: ["SheetLocalizer"]
+            dependencies: [
+                "SheetLocalizer",
+                "Extensions"
+            ],
+            path: "Tests/SheetLocalizer"
         )
     ]
 )

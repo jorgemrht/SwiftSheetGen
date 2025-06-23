@@ -1,26 +1,41 @@
-//
-//  Created by jorge on 20/6/25.
-//
+import Foundation
+import Extensions
 
-// MARK: - URL Transformer
 public struct GoogleSheetURLTransformer: Sendable {
-    static func transformToCSV(_ urlString: String) -> String {
-       
-        if urlString.contains("export?format=csv") || urlString.contains("output=csv") {
+  
+    private static let logger = Logger(category: "URLTransformer")
+    
+    public static func transformToCSV(_ urlString: String) -> String {
+        
+        guard !urlString.isBlank else {
+            logger.error("Empty URL string provided")
             return urlString
         }
         
-        if urlString.contains("/pubhtml") {
-            return urlString.replacingOccurrences(of: "/pubhtml", with: "/export?format=csv")
+        let trimmedURL = urlString.trimmed
+        
+        if trimmedURL.contains("export?format=csv") || trimmedURL.contains("output=csv") {
+            logger.debug("URL already in CSV format: \(trimmedURL)")
+            return trimmedURL
         }
         
-        if urlString.contains("/edit") {
-            let baseURL = urlString.components(separatedBy: "/edit").first ?? urlString
-            return "\(baseURL)/export?format=csv"
+        if trimmedURL.contains("/pubhtml") {
+            if trimmedURL.contains("2PACX-") {
+                let transformedURL = trimmedURL.replacingOccurrences(of: "/pubhtml", with: "/pub?output=csv")
+                logger.info("Transformed 2PACX /pubhtml URL: \(transformedURL)")
+                return transformedURL
+            } else {
+                let transformedURL = trimmedURL.replacingOccurrences(of: "/pubhtml", with: "/export?format=csv")
+                logger.info("Transformed regular /pubhtml URL: \(transformedURL)")
+                return transformedURL
+            }
         }
-        
-        return urlString.hasSuffix("/")
-            ? "\(urlString)export?format=csv"
-            : "\(urlString)/export?format=csv"
+                
+        let transformedURL = trimmedURL.hasSuffix("/")
+            ? "\(trimmedURL)pub?output=csv"
+            : "\(trimmedURL)/pub?output=csv"
+            
+        logger.info("Applied default transformation: \(transformedURL)")
+        return transformedURL
     }
 }

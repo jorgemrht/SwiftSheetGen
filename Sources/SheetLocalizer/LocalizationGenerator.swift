@@ -235,6 +235,7 @@ public struct LocalizationGenerator: Sendable {
         // Generated on: \(formattedDate)
         
         import Foundation
+        import SwiftUI
         
         @frozen
         public enum \(config.enumName): String, CaseIterable, Sendable {

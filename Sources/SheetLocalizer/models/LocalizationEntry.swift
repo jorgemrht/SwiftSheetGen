@@ -2,10 +2,10 @@ import Foundation
 
 // MARK: - Models
 public struct LocalizationEntry: Hashable, Sendable {
-    let view: String
-    let item: String
-    let type: String
-    let translations: [String: String]
+    public let view: String
+    public let item: String
+    public let type: String
+    public let translations: [String: String]
     
     public init(view: String, item: String, type: String, translations: [String: String]) {
             self.view = view

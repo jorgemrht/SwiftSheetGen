@@ -22,14 +22,14 @@ public struct LocalizationConfig: Sendable {
     
     public static let `default` = LocalizationConfig(
         outputDirectory: "./",
-        enumName: "JMRHT",
+        enumName: "L10n",
         sourceDirectory: "./Sources/SheetLocalizer",
         csvFileName: "localizables.csv"
     )
     
     public static func custom(
         outputDirectory: String = "./",
-        enumName: String = "JMRHT",
+        enumName: String = "L10n",
         sourceDirectory: String = "./Sources/SheetLocalizer",
         csvFileName: String = "localizables.csv"
     ) -> LocalizationConfig {

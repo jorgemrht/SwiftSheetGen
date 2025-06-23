@@ -8,19 +8,22 @@ public struct LocalizationConfig: Sendable {
     public let sourceDirectory: String
     public let csvFileName: String
     public let autoAddToXcode: Bool
+    public let cleanupTemporaryFiles: Bool
     
     public init(
         outputDirectory: String,
         enumName: String,
         sourceDirectory: String,
         csvFileName: String,
-        autoAddToXcode: Bool = true
+        autoAddToXcode: Bool = true,
+        cleanupTemporaryFiles: Bool = true
     ) {
         self.outputDirectory = outputDirectory
         self.enumName = enumName
         self.sourceDirectory = sourceDirectory
         self.csvFileName = csvFileName
         self.autoAddToXcode = autoAddToXcode
+        self.cleanupTemporaryFiles = cleanupTemporaryFiles
     }
     
     public static let `default` = LocalizationConfig(
@@ -28,7 +31,8 @@ public struct LocalizationConfig: Sendable {
         enumName: "L10n",
         sourceDirectory: "./Sources/SheetLocalizer",
         csvFileName: "localizables.csv",
-        autoAddToXcode: true
+        autoAddToXcode: true,
+        cleanupTemporaryFiles: true
     )
     
     public static func custom(
@@ -36,44 +40,16 @@ public struct LocalizationConfig: Sendable {
         enumName: String = "L10n",
         sourceDirectory: String = "./Sources/SheetLocalizer",
         csvFileName: String = "localizables.csv",
-        autoAddToXcode: Bool = true
+        autoAddToXcode: Bool = true,
+        cleanupTemporaryFiles: Bool = true 
     ) -> LocalizationConfig {
         LocalizationConfig(
             outputDirectory: outputDirectory,
             enumName: enumName,
             sourceDirectory: sourceDirectory,
             csvFileName: csvFileName,
-            autoAddToXcode: autoAddToXcode
+            autoAddToXcode: autoAddToXcode,
+            cleanupTemporaryFiles: cleanupTemporaryFiles
         )
     }
 }
-
-public extension LocalizationConfig {
-    init(arguments args: [String]) {
-        var config = LocalizationConfig.default
-
-        for i in 2..<args.count {
-            let arg = args[i]
-            if arg.hasPrefix("--enum=") {
-                let enumName = String(arg.dropFirst(7))
-                config = LocalizationConfig.custom(
-                    outputDirectory: config.outputDirectory,
-                    enumName: enumName,
-                    sourceDirectory: config.sourceDirectory,
-                    csvFileName: config.csvFileName
-                )
-            } else if arg.hasPrefix("--output=") {
-                let outputDir = String(arg.dropFirst(9))
-                config = LocalizationConfig.custom(
-                    outputDirectory: outputDir,
-                    enumName: config.enumName,
-                    sourceDirectory: config.sourceDirectory,
-                    csvFileName: config.csvFileName
-                )
-            }
-        }
-        
-        self = config
-    }
-}
-

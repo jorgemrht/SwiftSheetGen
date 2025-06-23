@@ -50,6 +50,10 @@ public struct LocalizationGenerator: Sendable {
         if config.autoAddToXcode {
             try await addGeneratedFilesToXcode(languages: languages)
         }
+        
+        if config.cleanupTemporaryFiles {
+            try await cleanupTemporaryCSV(at: csvPath)
+        }
     }
 
     // MARK: - CSV Processing
@@ -333,4 +337,25 @@ public struct LocalizationGenerator: Sendable {
             
             Self.logger.error("No .xcodeproj found in current or parent directories")
         }
+    
+    // MARK: - Cleanup Temporary CSV
+    
+    private func cleanupTemporaryCSV(at csvPath: String) async throws {
+        Self.logger.info("Cleaning up temporary CSV file: \(csvPath)")
+        
+        let fileManager = FileManager.default
+        let fileURL = URL(fileURLWithPath: csvPath)
+        
+        do {
+            // Verificar que el archivo existe antes de eliminarlo
+            if fileManager.fileExists(atPath: csvPath) {
+                try fileManager.removeItem(at: fileURL)
+                Self.logger.info("Successfully deleted temporary CSV: \(csvPath)")
+            } else {
+                Self.logger.debug("CSV file not found, skipping cleanup: \(csvPath)")
+            }
+        } catch {
+            Self.logger.error("Failed to delete temporary CSV: \(error.localizedDescription)")
+        }
+    }
 }

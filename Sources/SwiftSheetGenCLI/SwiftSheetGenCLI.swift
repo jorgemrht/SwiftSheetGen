@@ -28,6 +28,9 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
     @Flag(name: .long, help: "Skip adding generated files to Xcode project")
     var skipXcode: Bool = false
     
+    @Flag(name: .long, help: "Keep temporary CSV file (don't cleanup)")
+    var keepCSV: Bool = false
+    
     // MARK: - Init Required
     public init() {}
     
@@ -39,7 +42,8 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
             enumName: enumName,
             sourceDirectory: "\(output)/Sources/SheetLocalizer",
             csvFileName: "localizables.csv",
-            autoAddToXcode: !skipXcode
+            autoAddToXcode: !skipXcode,
+            cleanupTemporaryFiles: !keepCSV
         )
         
         let csvPath = "\(FileManager.default.currentDirectoryPath)/localizables/\(config.csvFileName)"
@@ -51,6 +55,7 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
             print("   - Output: \(output)")
             print("   - CSV Path: \(csvPath)")
             print("   - Add to Xcode: \(!skipXcode)")
+            print("   - Cleanup CSV: true")
         }
         
         do {
@@ -63,6 +68,7 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
             try await generator.generate(from: csvPath)
             
             print("🎉 Localization completed successfully!")
+            print("🧹 Temporary files cleaned up")
             
         } catch {
             throw SheetLocalizerError.networkError("Failed to generate localizations: \(error.localizedDescription)")

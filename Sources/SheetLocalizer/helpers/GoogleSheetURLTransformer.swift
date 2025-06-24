@@ -1,18 +1,21 @@
 import Foundation
-import Extensions
+import CoreExtensions
+import os.log
+
+// MARK: - Google Sheet URL Transformer
 
 public struct GoogleSheetURLTransformer: Sendable {
   
-    private static let logger = Logger(category: "URLTransformer")
-    
+    private static let logger = Logger.googleSheetURLTransformer
+
     public static func transformToCSV(_ urlString: String) -> String {
         
-        guard !urlString.isBlank else {
+        guard !urlString.isEmptyOrWhitespace else {
             logger.error("Empty URL string provided")
             return urlString
         }
         
-        let trimmedURL = urlString.trimmed
+        let trimmedURL = urlString.trimmedContent
         
         if trimmedURL.contains("export?format=csv") || trimmedURL.contains("output=csv") {
             logger.debug("URL already in CSV format: \(trimmedURL)")

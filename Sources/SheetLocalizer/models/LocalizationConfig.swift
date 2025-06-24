@@ -9,6 +9,8 @@ public struct LocalizationConfig: Sendable {
     public let csvFileName: String
     public let autoAddToXcode: Bool
     public let cleanupTemporaryFiles: Bool
+    public let forceUpdateExistingXcodeFiles: Bool
+    public let unifiedLocalizationDirectory: Bool
     
     public init(
         outputDirectory: String,
@@ -16,7 +18,9 @@ public struct LocalizationConfig: Sendable {
         sourceDirectory: String,
         csvFileName: String,
         autoAddToXcode: Bool = true,
-        cleanupTemporaryFiles: Bool = true
+        cleanupTemporaryFiles: Bool = true,
+        forceUpdateExistingXcodeFiles: Bool = false,
+        unifiedLocalizationDirectory: Bool = true
     ) {
         self.outputDirectory = outputDirectory
         self.enumName = enumName
@@ -24,24 +28,28 @@ public struct LocalizationConfig: Sendable {
         self.csvFileName = csvFileName
         self.autoAddToXcode = autoAddToXcode
         self.cleanupTemporaryFiles = cleanupTemporaryFiles
+        self.forceUpdateExistingXcodeFiles = forceUpdateExistingXcodeFiles
+        self.unifiedLocalizationDirectory = unifiedLocalizationDirectory
     }
     
     public static let `default` = LocalizationConfig(
         outputDirectory: "./",
         enumName: "L10n",
-        sourceDirectory: "./Sources/SheetLocalizer",
+        sourceDirectory: "./Sources",
         csvFileName: "localizables.csv",
         autoAddToXcode: true,
         cleanupTemporaryFiles: true
     )
     
     public static func custom(
-        outputDirectory: String = "./",
+        outputDirectory: String = "./Localizables",
         enumName: String = "L10n",
-        sourceDirectory: String = "./Sources/SheetLocalizer",
+        sourceDirectory: String = "./Localizables", 
         csvFileName: String = "localizables.csv",
         autoAddToXcode: Bool = true,
-        cleanupTemporaryFiles: Bool = true 
+        cleanupTemporaryFiles: Bool = true,
+        forceUpdateExistingXcodeFiles: Bool = false,
+        unifiedLocalizationDirectory: Bool = true
     ) -> LocalizationConfig {
         LocalizationConfig(
             outputDirectory: outputDirectory,
@@ -49,7 +57,9 @@ public struct LocalizationConfig: Sendable {
             sourceDirectory: sourceDirectory,
             csvFileName: csvFileName,
             autoAddToXcode: autoAddToXcode,
-            cleanupTemporaryFiles: cleanupTemporaryFiles
+            cleanupTemporaryFiles: cleanupTemporaryFiles,
+            forceUpdateExistingXcodeFiles: forceUpdateExistingXcodeFiles,
+            unifiedLocalizationDirectory: unifiedLocalizationDirectory
         )
     }
 }

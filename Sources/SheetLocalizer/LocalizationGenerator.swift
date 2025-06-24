@@ -1,12 +1,14 @@
 import Foundation
-import Extensions
-import XcodeGen
+import XcodeIntegration
+import CoreExtensions
+import os.log
 
 // MARK: - Localization Generator
 
 public struct LocalizationGenerator: Sendable {
+    
     private let config: LocalizationConfig
-    private static let logger = Logger(category: "LocalizationGenerator")
+    private static let logger = Logger.localizationGenerator
     
     public init(config: LocalizationConfig = .default) {
         self.config = config
@@ -67,9 +69,9 @@ public struct LocalizationGenerator: Sendable {
         var headerRowIndex = -1
         for (index, row) in rows.enumerated() {
             if row.count > 4 &&
-               row[1].trimmed == "[View]" &&
-               row[2].trimmed == "[Item]" &&
-               row[3].trimmed == "[Type]" {
+               row[1].trimmedContent == "[View]" &&
+               row[2].trimmedContent == "[Item]" &&
+               row[3].trimmedContent == "[Type]" {
                 headerRowIndex = index
                 break
             }
@@ -86,7 +88,7 @@ public struct LocalizationGenerator: Sendable {
 
         // Extract languages from columns after [Type]
         let languages = Array(header.dropFirst(4))
-            .map { $0.trimmed }
+            .map { $0.trimmedContent }
             .filter { !$0.isEmpty && !$0.hasPrefix("[") }
 
         Self.logger.info("Detected languages: \(languages)")
@@ -98,8 +100,8 @@ public struct LocalizationGenerator: Sendable {
             if row.count < 5 { continue }
             
             // Skip comment and separator rows
-            let firstCol = row.first?.trimmed.uppercased() ?? ""
-            let secondCol = row.count > 1 ? row[1].trimmed.uppercased() : ""
+            let firstCol = row.first?.trimmedContent.uppercased() ?? ""
+            let secondCol = row.count > 1 ? row[1].trimmedContent.uppercased() : ""
             
             if firstCol == "[END]" { break }
             if secondCol == "[COMMENT]" || secondCol.hasPrefix("[") { continue }
@@ -107,9 +109,9 @@ public struct LocalizationGenerator: Sendable {
             // Extract view, item, type from columns 1, 2, 3
             guard row.count >= 4 else { continue }
             
-            let view = row[1].trimmed
-            let item = row[2].trimmed
-            let type = row[3].trimmed
+            let view = row[1].trimmedContent
+            let item = row[2].trimmedContent
+            let type = row[3].trimmedContent
             
             guard !view.isEmpty && !item.isEmpty && !type.isEmpty else { continue }
             guard !view.hasPrefix("[") && !item.hasPrefix("[") && !type.hasPrefix("[") else { continue }
@@ -120,7 +122,7 @@ public struct LocalizationGenerator: Sendable {
             
             for index in languages.indices {
                 if index < values.count {
-                    let val = values[index].trimmed
+                    let val = values[index].trimmedContent
                     if !val.isEmpty {
                         translations[languages[index]] = val
                     }
@@ -154,14 +156,14 @@ public struct LocalizationGenerator: Sendable {
         
         for row in rows {
             if row.count >= 5 &&
-               row[1].trimmed == "[View]" &&
-               row[2].trimmed == "[Item]" &&
-               row[3].trimmed == "[Type]" {
+               row[1].trimmedContent == "[View]" &&
+               row[2].trimmedContent == "[Item]" &&
+               row[3].trimmedContent == "[Type]" {
                 foundValidHeader = true
                 
                 // Check for at least one language column
                 let languageColumns = Array(row.dropFirst(4))
-                    .map { $0.trimmed }
+                    .map { $0.trimmedContent }
                     .filter { !$0.isEmpty && !$0.hasPrefix("[") }
                 
                 guard !languageColumns.isEmpty else {
@@ -196,18 +198,21 @@ public struct LocalizationGenerator: Sendable {
     }
 
     private func generateLanguageFile(language: String, entries: [LocalizationEntry]) async throws {
-        let folder = "\(config.outputDirectory)/\(language).lproj"
+        let folder: String
+        
+        folder = "\(config.outputDirectory)/\(language).lproj"
+        
         try FileManager.default.createDirectory(
             atPath: folder,
             withIntermediateDirectories: true,
             attributes: nil
         )
-
+        
         let filePath = "\(folder)/Localizable.strings"
         let validEntries = entries
             .filter { $0.hasTranslation(for: language) }
             .sorted { $0.key < $1.key }
-
+        
         let content = validEntries.map { entry in
             let translation = entry.translation(for: language)!
             let escaped = translation
@@ -215,25 +220,28 @@ public struct LocalizationGenerator: Sendable {
                 .replacingOccurrences(of: "\n", with: "\\n")
             return "\"\(entry.key)\" = \"\(escaped)\";"
         }.joined(separator: "\n")
-
+        
         try content.write(toFile: filePath, atomically: true, encoding: .utf8)
         Self.logger.info("Generated: \(filePath) (\(validEntries.count) entries)")
     }
 
     private func generateSwiftEnum(allKeys: [String]) async throws {
-        let outputPath = "\(config.sourceDirectory)/Localization.swift"
+        let outputPath = "\(config.sourceDirectory)/\(config.enumName).swift"
+        
         let code = try await buildSwiftEnumCode(allKeys: allKeys)
-
         let fileURL = URL(fileURLWithPath: outputPath)
+        
         try FileManager.default.createDirectory(
             at: fileURL.deletingLastPathComponent(),
             withIntermediateDirectories: true,
             attributes: nil
         )
-
+        
         try code.write(to: fileURL, atomically: true, encoding: .utf8)
         Self.logger.info("Enum generated at: \(outputPath) (\(allKeys.count) cases)")
     }
+
+
 
     // MARK: - Swift Enum Builder
 
@@ -303,40 +311,40 @@ public struct LocalizationGenerator: Sendable {
     // MARK: - Generated Files To Xcode
     
     private func addGeneratedFilesToXcode(languages: [String]) async throws {
-            Self.logger.info("Auto-adding generated files to Xcode project...")
-            
-            let currentDir = FileManager.default.currentDirectoryPath
-            let searchPaths = [
-                currentDir,
-                "\(currentDir)/..",
-                "\(currentDir)/../.."
-            ]
-            
-            for searchPath in searchPaths {
-                let resolvedPath = URL(fileURLWithPath: searchPath).standardized.path
-                
-                do {
-                    let contents = try FileManager.default.contentsOfDirectory(atPath: resolvedPath)
+        Self.logger.info("Auto-adding generated files to Xcode project...")
+        let currentDir = FileManager.default.currentDirectoryPath
+        let searchPaths = [currentDir, "\(currentDir)/..", "\(currentDir)/../.."]
+        
+        for searchPath in searchPaths {
+            let resolvedPath = URL(fileURLWithPath: searchPath).standardized.path
+            do {
+                let contents = try FileManager.default.contentsOfDirectory(atPath: resolvedPath)
+                if let xcodeproj = contents.first(where: { $0.hasSuffix(".xcodeproj") }) {
+                    Self.logger.info("Found Xcode project: \(xcodeproj) in \(resolvedPath)")
                     
-                    if let xcodeproj = contents.first(where: { $0.hasSuffix(".xcodeproj") }) {
-                        Self.logger.info("Found Xcode project: \(xcodeproj) in \(resolvedPath)")
-                        
-                        let generatedFiles = languages.map { "\(config.outputDirectory)/\($0).lproj/Localizable.strings" }
-                        
-                        try await XcodeProjectUpdater.addLocalizationFiles(
-                            projectPath: resolvedPath,
-                            generatedFiles: generatedFiles,
-                            languages: languages
-                        )
-                        return
-                    }
-                } catch {
-                    Self.logger.debug("Could not read directory: \(resolvedPath)")
+                    let localizationFiles: [String]
+                    
+                    localizationFiles = languages.map { "\(config.outputDirectory)/\($0).lproj/Localizable.strings" }
+                    
+                    let enumFile = "\(config.sourceDirectory)/\(config.enumName).swift"
+                    
+                    try await XcodeIntegration.addLocalizationFiles(
+                        projectPath: resolvedPath,
+                        generatedFiles: localizationFiles,
+                        languages: languages,
+                        enumFile: enumFile,
+                        forceUpdateExisting: config.forceUpdateExistingXcodeFiles
+                    )
+                    return
                 }
+            } catch {
+                Self.logger.debug("Could not read directory: \(resolvedPath)")
             }
-            
-            Self.logger.error("No .xcodeproj found in current or parent directories")
         }
+        
+        Self.logger.error("No .xcodeproj found in current or parent directories")
+    }
+
     
     // MARK: - Cleanup Temporary CSV
     
@@ -347,7 +355,6 @@ public struct LocalizationGenerator: Sendable {
         let fileURL = URL(fileURLWithPath: csvPath)
         
         do {
-            // Verificar que el archivo existe antes de eliminarlo
             if fileManager.fileExists(atPath: csvPath) {
                 try fileManager.removeItem(at: fileURL)
                 Self.logger.info("Successfully deleted temporary CSV: \(csvPath)")

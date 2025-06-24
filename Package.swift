@@ -12,12 +12,12 @@ let package = Package(
             targets: ["SheetLocalizer"]
         ),
         .library(
-            name: "Extensions",
-            targets: ["Extensions"]
+            name: "CoreExtensions",
+            targets: ["CoreExtensions"]
         ),
         .library(
-            name: "XcodeGen",
-            targets: ["XcodeGen"]
+            name: "XcodeIntegration",
+            targets: ["XcodeIntegration"]
         ),
         .executable(
             name: "swiftsheetgen",
@@ -25,29 +25,29 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.2.0")
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.5.0")
     ],
     targets: [
         // MARK: - Extension Module
         .target(
-            name: "Extensions",
+            name: "CoreExtensions",
             dependencies: [],
-            path: "Sources/Extensions"
+            path: "Sources/CoreExtensions"
         ),
         
         // MARK: - Xcode Project Generator
         .target(
-            name: "XcodeGen",
-            dependencies: ["Extensions"],
-            path: "Sources/XcodeGen"
+            name: "XcodeIntegration",
+            dependencies: ["CoreExtensions"],
+            path: "Sources/XcodeIntegration"
         ),
         
-        // MARK: - Core Library
+        // MARK: - CoreExtension Library
         .target(
             name: "SheetLocalizer",
             dependencies: [
-                "Extensions",
-                "XcodeGen"
+                "CoreExtensions",
+                "XcodeIntegration"
             ],
             path: "Sources/SheetLocalizer"
         ),
@@ -57,8 +57,8 @@ let package = Package(
             name: "SwiftSheetGenCLI",
             dependencies: [
                 "SheetLocalizer",
-                "Extensions",
-                "XcodeGen",
+                "CoreExtensions",
+                "XcodeIntegration",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
             path: "Sources/SwiftSheetGenCLI"
@@ -69,8 +69,8 @@ let package = Package(
             name: "SheetLocalizerTests",
             dependencies: [
                 "SheetLocalizer",
-                "Extensions",
-                "XcodeGen"
+                "CoreExtensions",
+                "XcodeIntegration"
             ],
             path: "Tests/SheetLocalizer"
         )

@@ -1,6 +1,7 @@
 import Foundation
 
 // MARK: - Models
+
 public struct LocalizationEntry: Hashable, Sendable {
     public let view: String
     public let item: String

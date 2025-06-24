@@ -1,5 +1,8 @@
 import Foundation
-import Extensions
+import CoreExtensions
+import os.log
+
+// MARK: - CSV Parser
 
 public struct CSVParser: Sendable {
     
@@ -7,11 +10,11 @@ public struct CSVParser: Sendable {
         case field, quotedField, quotedQuote
     }
     
-    private static let logger = Logger(category: "CSVParser")
-    
+    private static let logger = Logger.csvParser
+
     public static func parse(_ content: String) throws -> [[String]] {
    
-        guard !content.isBlank else {
+        guard !content.isEmptyOrWhitespace else {
             logger.error("Empty CSV content provided")
             throw SheetLocalizerError.csvParsingError("CSV content is empty")
         }
@@ -30,11 +33,11 @@ public struct CSVParser: Sendable {
                 state = .quotedField
                 
             case (.field, ","):
-                currentRow.append(currentField.trimmed)
+                currentRow.append(currentField.trimmedContent)
                 currentField = ""
                 
             case (.field, "\n"), (.field, "\r\n"):
-                currentRow.append(currentField.trimmed)
+                currentRow.append(currentField.trimmedContent)
                 if !currentRow.isEmpty {
                     rows.append(currentRow)
                     logger.debug("Parsed row \(lineNumber): \(currentRow.count) fields")
@@ -51,12 +54,12 @@ public struct CSVParser: Sendable {
                 state = .quotedField
                 
             case (.quotedQuote, ","):
-                currentRow.append(currentField.trimmed)
+                currentRow.append(currentField.trimmedContent)
                 currentField = ""
                 state = .field
                 
             case (.quotedQuote, "\n"), (.quotedQuote, "\r\n"):
-                currentRow.append(currentField.trimmed)
+                currentRow.append(currentField.trimmedContent)
                 if !currentRow.isEmpty {
                     rows.append(currentRow)
                     logger.debug("Parsed row \(lineNumber): \(currentRow.count) fields")
@@ -76,12 +79,12 @@ public struct CSVParser: Sendable {
         }
         
         if !currentField.isEmpty || !currentRow.isEmpty {
-            currentRow.append(currentField.trimmed)
+            currentRow.append(currentField.trimmedContent)
             rows.append(currentRow)
             logger.debug("Parsed final row \(lineNumber): \(currentRow.count) fields")
         }
         
-        let filteredRows = rows.filter { !$0.allSatisfy(\.isBlank) }
+        let filteredRows = rows.filter { !$0.allSatisfy(\.isEmptyOrWhitespace) }
         
         logger.info("CSV parsing completed: \(filteredRows.count) valid rows from \(lineNumber) total lines")
         

@@ -1,6 +1,7 @@
 import Foundation
 
 // MARK: - Error Types
+
 public enum SheetLocalizerError: Error, LocalizedError, Sendable {
     
     case invalidURL(String)
@@ -9,6 +10,7 @@ public enum SheetLocalizerError: Error, LocalizedError, Sendable {
     case fileSystemError(String)
     case insufficientData
     case httpError(Int)
+    case localizationGenerationError(String)
     
     public var errorDescription: String? {
         switch self {
@@ -24,6 +26,8 @@ public enum SheetLocalizerError: Error, LocalizedError, Sendable {
             return "Insufficient data in the CSV"
         case .httpError(let statusCode):
             return "HTTP error: \(statusCode)"
+        case .localizationGenerationError(let message):
+            return "Localization generation error: \(message)"
         }
     }
 }

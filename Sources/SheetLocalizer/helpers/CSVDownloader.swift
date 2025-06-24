@@ -1,12 +1,13 @@
 import Foundation
-import Extensions
+import CoreExtensions
+import os.log
 
 // MARK: - CSV Downloader
 
 public actor CSVDownloader {
     
     private let session: URLSession
-    private let logger: Logger
+    private static let logger = Logger.csvDownloader
     
     public init(timeoutInterval: TimeInterval = 30.0) {
         let config = URLSessionConfiguration.default
@@ -15,56 +16,52 @@ public actor CSVDownloader {
         config.httpAdditionalHeaders = [
             "User-Agent": "SheetLocalizer/1.0 (Swift 6.1)"
         ]
+        
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
         self.session = URLSession(configuration: config)
-        self.logger = Logger(category: "CSVDownloader")
+        
+        Self.logger.debug("CSVDownloader initialized with timeout: \(timeoutInterval)")
     }
-
+    
     deinit {
         session.invalidateAndCancel()
-        logger.debug("CSVDownloader deallocated")
+        Self.logger.debug("CSVDownloader deallocated")
     }
-
+    
     public func download(from urlString: String, to outputPath: String) async throws {
         try await validateInputs(urlString: urlString, outputPath: outputPath)
         
-        let transformedURL = GoogleSheetURLTransformer.transformToCSV(urlString.trimmed)
-        
+        let transformedURL = GoogleSheetURLTransformer.transformToCSV(urlString.trimmedContent)
         guard let url = URL(string: transformedURL) else {
-            logger.error("Invalid URL: \(transformedURL)")
+            Self.logger.error("Invalid URL: \(transformedURL)")
             throw SheetLocalizerError.invalidURL(transformedURL)
         }
-
-        logger.info("Starting download from: \(transformedURL)")
-
+        
+        Self.logger.info("Starting download from: \(transformedURL)")
         try Task.checkCancellation()
-
+        
         do {
             let (data, response) = try await session.data(from: url)
-            
             try Task.checkCancellation()
-            
             try await validateAndSave(data: data, response: response, outputPath: outputPath)
-            
-            logger.info("CSV successfully downloaded to: \(outputPath)")
-            
+            Self.logger.info("CSV successfully downloaded to: \(outputPath)")
         } catch let error as SheetLocalizerError {
-            logger.error("Download failed: \(error.localizedDescription)")
+            Self.logger.logError("Download failed", error: error)
             throw error
         } catch {
-            logger.error("Unexpected download error: \(error.localizedDescription)")
+            Self.logger.logError("Unexpected download error", error: error)
             throw SheetLocalizerError.networkError("Download failed: \(error.localizedDescription)")
         }
     }
-
+    
     // MARK: - Private Helpers
     
     nonisolated private func validateInputs(urlString: String, outputPath: String) async throws {
-        guard !urlString.isBlank else {
+        guard !urlString.isEmptyOrWhitespace else {
             throw SheetLocalizerError.invalidURL("URL string is empty")
         }
         
-        guard !outputPath.isBlank else {
+        guard !outputPath.isEmptyOrWhitespace else {
             throw SheetLocalizerError.fileSystemError("Output path is empty")
         }
     }
@@ -73,44 +70,41 @@ public actor CSVDownloader {
         try validateResponse(response)
         try await saveData(data, to: outputPath)
     }
-
+    
     private func validateResponse(_ response: URLResponse) throws {
         guard let httpResponse = response as? HTTPURLResponse else {
-            logger.error("Invalid HTTP response type")
+            Self.logger.error("Invalid HTTP response type")
             throw SheetLocalizerError.networkError("Invalid HTTP response")
         }
         
-        logger.debug("HTTP Status: \(httpResponse.statusCode)")
-        
+        Self.logger.debug("HTTP Status: \(httpResponse.statusCode)")
         guard 200...299 ~= httpResponse.statusCode else {
-            logger.error("HTTP error: \(httpResponse.statusCode)")
+            Self.logger.error("HTTP error: \(httpResponse.statusCode)")
             throw SheetLocalizerError.httpError(httpResponse.statusCode)
         }
-
+        
         guard let contentType = httpResponse.value(forHTTPHeaderField: "Content-Type") else {
-            logger.debug("No Content-Type header found")
+            Self.logger.debug("No Content-Type header found")
             return
         }
         
-        logger.debug("Content-Type: \(contentType)")
-        
+        Self.logger.debug("Content-Type: \(contentType)")
         let validContentTypes = ["text/csv", "text/plain", "application/csv"]
         let isValidContentType = validContentTypes.contains { contentType.localizedCaseInsensitiveContains($0) }
         
         if !isValidContentType {
-            logger.error("Unexpected Content-Type: \(contentType)")
+            Self.logger.error("Unexpected Content-Type: \(contentType)")
         }
     }
-
+    
     private func saveData(_ data: Data, to outputPath: String) async throws {
-        let trimmedPath = outputPath.trimmed
+        let trimmedPath = outputPath.trimmedContent
         let fileURL = URL(fileURLWithPath: trimmedPath)
         
-        logger.debug("Attempting to save \(data.count) bytes to: \(trimmedPath)")
+        Self.logger.debug("Attempting to save \(data.count) bytes to: \(trimmedPath)")
         
         do {
             let directoryURL = fileURL.deletingLastPathComponent()
-            
             var isDirectory: ObjCBool = false
             let directoryExists = FileManager.default.fileExists(atPath: directoryURL.path, isDirectory: &isDirectory)
             
@@ -120,21 +114,22 @@ public actor CSVDownloader {
                     withIntermediateDirectories: true,
                     attributes: nil
                 )
-                logger.debug("Directory created: \(directoryURL.path)")
+                
+                Self.logger.debug("Directory created: \(directoryURL.path)")
             } else {
-                logger.debug("Directory already exists: \(directoryURL.path)")
+                Self.logger.debug("Directory already exists: \(directoryURL.path)")
             }
             
+            // Use efficient writing for large files
             if data.count > 10_000_000 {
                 try await saveDataWithFileHandle(data, to: fileURL)
             } else {
                 try data.write(to: fileURL, options: .atomic)
             }
             
-            logger.debug("File written successfully: \(fileURL.path)")
-            
+            Self.logger.debug("File written successfully: \(fileURL.path)")
         } catch {
-            logger.error("File system error: \(error.localizedDescription)")
+            Self.logger.logError("File system error", error: error)
             throw SheetLocalizerError.fileSystemError("Error writing file: \(error.localizedDescription)")
         }
     }
@@ -146,18 +141,17 @@ public actor CSVDownloader {
         }
         
         try fileHandle.write(contentsOf: data)
-        logger.debug("Large file written with FileHandle")
+        Self.logger.debug("Large file written with FileHandle")
     }
     
     // MARK: - Additional Utility Methods
     
     nonisolated public func validateURL(_ urlString: String) async -> Bool {
-        guard !urlString.isBlank else {
+        guard !urlString.isEmptyOrWhitespace else {
             return false
         }
         
-        let transformedURL = GoogleSheetURLTransformer.transformToCSV(urlString.trimmed)
-        
+        let transformedURL = GoogleSheetURLTransformer.transformToCSV(urlString.trimmedContent)
         guard let url = URL(string: transformedURL) else {
             return false
         }
@@ -170,7 +164,6 @@ public actor CSVDownloader {
             
             var request = URLRequest(url: url)
             request.httpMethod = "HEAD"
-            
             let (_, response) = try await validationSession.data(for: request)
             
             if let httpResponse = response as? HTTPURLResponse {
@@ -178,7 +171,6 @@ public actor CSVDownloader {
             }
             
             return false
-            
         } catch {
             return false
         }
@@ -202,10 +194,10 @@ extension CSVDownloader {
                 return
             } catch {
                 lastError = error
-                logger.error("Download attempt \(attempt) failed: \(error.localizedDescription)")
+                Self.logger.logError("Download attempt \(attempt) failed", error: error)
                 
                 if attempt < maxRetries {
-                    logger.info("Retrying in \(retryDelay) seconds...")
+                    Self.logger.info("Retrying in \(retryDelay) seconds...")
                     try await Task.sleep(for: .seconds(retryDelay))
                 }
             }
@@ -215,10 +207,10 @@ extension CSVDownloader {
     }
     
     nonisolated static func isValidGoogleSheetURL(_ urlString: String) -> Bool {
-        return urlString.contains("docs.google.com/spreadsheets")
+        urlString.contains("docs.google.com/spreadsheets")
     }
     
-    nonisolated static func createWithDefaults() -> CSVDownloader {
-        return CSVDownloader(timeoutInterval: 30.0)
+    nonisolated public static func createWithDefaults() -> CSVDownloader {
+        CSVDownloader(timeoutInterval: 30.0)
     }
 }

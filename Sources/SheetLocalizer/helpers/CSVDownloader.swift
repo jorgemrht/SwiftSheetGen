@@ -10,6 +10,7 @@ public actor CSVDownloader {
     private static let logger = Logger.csvDownloader
     
     public init(timeoutInterval: TimeInterval = 30.0) {
+        
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = timeoutInterval
         config.timeoutIntervalForResource = timeoutInterval * 2
@@ -44,13 +45,11 @@ public actor CSVDownloader {
             let (data, response) = try await session.data(from: url)
             try Task.checkCancellation()
             try await validateAndSave(data: data, response: response, outputPath: outputPath)
-            Self.logger.info("CSV successfully downloaded to: \(outputPath)")
+            Self.logger.info("CSV successfully downloaded to: \(outputPath)") // TODO: Check the log info
         } catch let error as SheetLocalizerError {
-            Self.logger.logError("Download failed", error: error)
-            throw error
+            Self.logger.logFatal("Download failed", error: error) // TODO: Check the log info
         } catch {
-            Self.logger.logError("Unexpected download error", error: error)
-            throw SheetLocalizerError.networkError("Download failed: \(error.localizedDescription)")
+            Self.logger.logFatal("Unexpected download error", error: error) // TODO: Check the log info
         }
     }
     
@@ -129,8 +128,7 @@ public actor CSVDownloader {
             
             Self.logger.debug("File written successfully: \(fileURL.path)")
         } catch {
-            Self.logger.logError("File system error", error: error)
-            throw SheetLocalizerError.fileSystemError("Error writing file: \(error.localizedDescription)")
+            Self.logger.logFatal("File system error", error: error) // TODO: Check the log info
         }
     }
     
@@ -180,11 +178,13 @@ public actor CSVDownloader {
 // MARK: - Extensions
 
 extension CSVDownloader {
+    
     public func downloadWithRetry(
         from urlString: String,
         to outputPath: String,
         maxRetries: Int = 3,
-        retryDelay: TimeInterval = 2.0
+        retryDelay: TimeInterval = 2.0,
+        privacy: Bool = false
     ) async throws {
         var lastError: Error?
         
@@ -194,16 +194,16 @@ extension CSVDownloader {
                 return
             } catch {
                 lastError = error
-                Self.logger.logError("Download attempt \(attempt) failed", error: error)
+                Self.logger.logError("Download attempt", value: "\(attempt) failed: \(String(describing: error))", isPrivate: privacy)
                 
                 if attempt < maxRetries {
-                    Self.logger.info("Retrying in \(retryDelay) seconds...")
+                    Self.logger.logInfo("Retrying in", value: "\(retryDelay) seconds...", isPrivate: privacy)
                     try await Task.sleep(for: .seconds(retryDelay))
                 }
             }
         }
         
-        throw lastError ?? SheetLocalizerError.networkError("All retry attempts failed")
+        Self.logger.logFatal("All retry attempts failed", error: lastError ?? SheetLocalizerError.networkError("Unknown error"), isPrivate: privacy)
     }
     
     nonisolated static func isValidGoogleSheetURL(_ urlString: String) -> Bool {

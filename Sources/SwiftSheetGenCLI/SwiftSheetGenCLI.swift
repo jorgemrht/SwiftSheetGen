@@ -10,6 +10,10 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
     
     private static let logger = Logger.cli
 
+    private var logPrivacy: LogPrivacyLevel {
+        LogPrivacyLevel(from: logPrivacyLevel)
+    }
+
     public static let configuration = CommandConfiguration(
         commandName: "swiftsheetgen",
         abstract: "🌍 Generate Swift localization code from Google Sheets data",
@@ -37,13 +41,13 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
     @Option(name: .long, help: "📁 Target directory for generated files (default: current directory)")
     var outputDir: String = "./"
     
-    @Flag(help: "📝 Enable detailed logging for debugging")
+    @Flag(name: [.customShort("v"), .long], help: "📝 Enable detailed logging for debugging")
     var verbose: Bool = false
     
     @Flag(name: .long, help: "⏭️ Skip automatic integration of generated files into Xcode project")
     var skipXcode: Bool = false
     
-    @Flag(name: .long, help: "💾 Keep downloaded CSV file for debugging")
+    @Flag(name: [.customShort("k"), .long], help: "💾 Keep downloaded CSV file for debugging")
     var keepCSV: Bool = false
     
     @Flag(name: .long, help: "🔄 Update existing localization files in Xcode")
@@ -51,7 +55,10 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
     
     @Flag(name: .long, help: "📂 Generate Swift enum file separate from localization directories")
     var enumSeparateFromLocalizations: Bool = false
-    
+
+    @Option(name: .long, help: "Privacy level for log output: public (default) or private")
+    var logPrivacyLevel: String = "public"
+
     private var localizationOutputDirectory: String {
         "\(outputDir.trimmingCharacters(in: .whitespacesAndNewlines))/Localizables"
     }
@@ -67,13 +74,13 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
     public func run() async throws {
         
         let executionStartTime = Date()
-        Self.logger.info("🚀 SwiftSheetGen localization generation started")
+        Self.logger.log("🚀 SwiftSheetGen localization generation started")
         
         do {
             try await executeCompleteLocalizationWorkflow()
             logSuccessfulExecutionCompletion(startTime: executionStartTime)
         } catch {
-            Self.logger.error("💥 Localization generation workflow failed: \(error.localizedDescription)")
+            Self.logger.error("💥 Localization generation workflow failed: \(error.localizedDescription)") // TODO: Check the log
             throw SheetLocalizerError.networkError("Failed to generate localizations: \(error.localizedDescription)")
         }
     }
@@ -81,20 +88,20 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
     // MARK: - Main Workflow Execution
     private func executeCompleteLocalizationWorkflow() async throws {
         // Step 1: Validate and prepare configuration
-        Self.logger.info("⚙️ Preparing localization configuration")
+        Self.logger.log("⚙️ Preparing localization configuration")
         let localizationConfiguration = try createLocalizationConfiguration()
         try logConfigurationDetailsIfVerbose(localizationConfiguration)
         
         // Step 2: Download CSV data from Google Sheets
-        Self.logger.info("📥 Downloading CSV data from Google Sheets")
+        Self.logger.logInfo("📥 Downloading CSV data from Google Sheets", value: sheetsURL,  isPrivate: logPrivacy.isPrivate)
         try await downloadCSVDataFromGoogleSheets()
         
         // Step 3: Generate Swift localization files
-        Self.logger.info("🔨 Generating Swift localization files from CSV data")
+        Self.logger.log("🔨 Generating Swift localization files from CSV data")
         try await generateSwiftLocalizationFiles(using: localizationConfiguration)
         
         // Step 4: Clean up temporary files if requested
-        Self.logger.info("🧹 Performing cleanup operations")
+        Self.logger.log("🧹 Performing cleanup operations")
         try performTemporaryFileCleanupIfRequested()
     }
     
@@ -102,8 +109,9 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
     private func createLocalizationConfiguration() throws -> LocalizationConfig {
         Self.logger.debug("🔧 Creating localization configuration with provided parameters")
         
-        guard !sheetsURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw SheetLocalizerError.invalidURL("Google Sheets URL cannot be empty")
+        guard validateGoogleSheetsURL(sheetsURL) else {
+            Self.logger.logError("❌ Invalid Google Sheets URL:", value: sheetsURL, isPrivate: logPrivacy.isPrivate)
+            throw SheetLocalizerError.invalidURL("Google Sheets URL is not valid")
         }
         
         let trimmedBaseDirectory = outputDir.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -151,7 +159,7 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
             )
         }
         
-        Self.logger.info("✅ Google Sheets URL validation successful")
+        Self.logger.log("✅ Google Sheets URL validation successful")
         
         // Perform CSV download with retry mechanism
         do {
@@ -161,10 +169,9 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
                 maxRetries: 3,
                 retryDelay: 2.0
             )
-            Self.logger.info("✅ CSV data downloaded successfully to: \(temporaryCSVFilePath)")
+            Self.logger.log("✅ CSV data downloaded successfully to: \(temporaryCSVFilePath)") // TODO: Check the log
         } catch {
-            Self.logger.logError("❌ CSV download failed after retries", error: error)
-            throw SheetLocalizerError.networkError("CSV download failed: \(error.localizedDescription)")
+            Self.logger.logFatal("❌ CSV download failed after retries", error: error) // TODO: Check the log
         }
     }
     
@@ -175,21 +182,20 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
         
         do {
             try await swiftLocalizationGenerator.generate(from: temporaryCSVFilePath)
-            Self.logger.info("✅ Swift localization files generated successfully")
+            Self.logger.log("✅ Swift localization files generated successfully")
             
             if !skipXcode {
-                Self.logger.info("📱 Localization files integrated into Xcode project")
+                Self.logger.log("📱 Localization files integrated into Xcode project")
             }
         } catch {
-            Self.logger.logError("❌ Swift localization generation failed", error: error)
-            throw SheetLocalizerError.localizationGenerationError("Localization generation failed: \(error.localizedDescription)")
+            Self.logger.logFatal("❌ Swift localization generation failed", error: error) // TODO: Check the log
         }
     }
     
     // MARK: - Cleanup Operations
     private func performTemporaryFileCleanupIfRequested() throws {
         if keepCSV {
-            Self.logger.info("💾 Temporary CSV file preserved at: \(temporaryCSVFilePath)")
+            Self.logger.logInfo("💾 Temporary CSV file preserved at:", value: temporaryCSVFilePath, isPrivate: logPrivacy.isPrivate)
             Self.logger.debug("📄 You can review the CSV data for debugging purposes")
             return
         }
@@ -201,7 +207,7 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
                 try fileManager.removeItem(atPath: temporaryCSVFilePath)
                 Self.logger.debug("🗑️ Temporary CSV file cleaned up successfully")
             } catch {
-                Self.logger.logError("⚠️ Failed to clean up temporary CSV file", error: error)
+                Self.logger.logError("⚠️ Failed to clean up temporary CSV file:",  value: error.localizedDescription, isPrivate: logPrivacy.isPrivate)
             }
         } else {
             Self.logger.debug("ℹ️ No temporary CSV file found to clean up")
@@ -212,30 +218,30 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
     private func logSuccessfulExecutionCompletion(startTime: Date) {
         let executionDuration = Date().timeIntervalSince(startTime)
         
-        Self.logger.info("🎉 Localization generation completed successfully!")
-        Self.logger.info("⏱️ Total execution time: \(String(format: "%.2f", executionDuration)) seconds")
+        Self.logger.log("🎉 Localization generation completed successfully!")
+        Self.logger.logInfo("⏱️ Total execution time:", value: "\(String(format: "%.2f", executionDuration)) seconds") // TODO: Check the log
         
         // Provide helpful information about what was accomplished
-        Self.logger.info("📍 Generated files location: \(localizationOutputDirectory)")
+        Self.logger.logInfo("📍 Generated files location:", value: localizationOutputDirectory, isPrivate: logPrivacy.isPrivate)
         
         if !skipXcode {
-            Self.logger.info("📱 Localization files have been integrated into your Xcode project")
+            Self.logger.log("📱 Localization files have been integrated into your Xcode project")
             
             if forceUpdate {
-                Self.logger.info("🔄 Existing localization files were updated in Xcode project")
+                Self.logger.log("🔄 Existing localization files were updated in Xcode project")
             }
         }
         
         if enumSeparateFromLocalizations {
-            Self.logger.info("📂 Swift enum file generated separately from localization directories")
+            Self.logger.log("📂 Swift enum file generated separately from localization directories")
         }
         
         if keepCSV {
-            Self.logger.info("💾 CSV file preserved for debugging: \(temporaryCSVFilePath)")
+            Self.logger.logInfo("💾 CSV file preserved for debugging:", value: temporaryCSVFilePath, isPrivate: logPrivacy.isPrivate)
         }
         
         // Provide next steps guidance
-        Self.logger.info("🚀 Your Swift project is now ready with generated localizations!")
+        Self.logger.log("🚀 Your Swift project is now ready with generated localizations!")
         
         if verbose {
             Self.logger.debug("💡 Tip: You can now use \(swiftEnumName) enum in your Swift code for type-safe localizations")
@@ -259,25 +265,13 @@ extension SwiftSheetGenCLI {
     
     /// Creates output directory if it doesn't exist
     private func ensureOutputDirectoryExists() throws {
-        let fileManager = FileManager.default
         let trimmedPath = outputDir.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        var isDirectory: ObjCBool = false
-        let directoryExists = fileManager.fileExists(atPath: trimmedPath, isDirectory: &isDirectory)
-        
-        if !directoryExists || !isDirectory.boolValue {
-            do {
-                try fileManager.createDirectory(
-                    atPath: trimmedPath,
-                    withIntermediateDirectories: true,
-                    attributes: nil
-                )
-                Self.logger.debug("📁 Created output directory: \(trimmedPath)")
-            } catch {
-                throw SheetLocalizerError.fileSystemError(
-                    "Cannot create directory at \(trimmedPath): \(error.localizedDescription)"
-                )
-            }
+        do {
+            try FileManager.default.createDirectoryIfNeeded(atPath: trimmedPath)
+            Self.logger.logInfo("📁 Output directory ready", value: trimmedPath, isPrivate: logPrivacy.isPrivate)
+        } catch {
+            Self.logger.logError("❌ Cannot create directory at", value: trimmedPath, isPrivate: logPrivacy.isPrivate)
+            throw SheetLocalizerError.fileSystemError("Cannot create directory at \(trimmedPath): \(error.localizedDescription)")
         }
     }
 }

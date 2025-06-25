@@ -16,7 +16,7 @@ public struct LocalizationGenerator: Sendable {
 
     public func generate(from csvPath: String) async throws {
         try Task.checkCancellation()
-        Self.logger.info("Processing CSV: \(csvPath)")
+        Self.logger.info("Processing CSV: \(csvPath, privacy: .public)")
         
         let content = try String(contentsOfFile: csvPath, encoding: .utf8)
         let rows = try CSVParser.parse(content)
@@ -37,8 +37,8 @@ public struct LocalizationGenerator: Sendable {
             throw SheetLocalizerError.csvParsingError("No valid entries found")
         }
 
-        Self.logger.info("Detected languages: [\(languages.joined(separator: ", "))]")
-        Self.logger.info("Detected entries: \(entries.count)")
+        Self.logger.info("Detected languages: [\(languages.joined(separator: ", ")), privacy: .public]")
+        Self.logger.info("Detected entries: \(entries.count, privacy: .public)")
         
         try Task.checkCancellation()
         try await generateLocalizationFiles(languages: languages, entries: entries)
@@ -91,7 +91,7 @@ public struct LocalizationGenerator: Sendable {
             .map { $0.trimmedContent }
             .filter { !$0.isEmpty && !$0.hasPrefix("[") }
 
-        Self.logger.info("Detected languages: \(languages)")
+        Self.logger.info("Detected languages: \(languages, privacy: .public)")
         
         var entries: [LocalizationEntry] = []
         
@@ -115,11 +115,17 @@ public struct LocalizationGenerator: Sendable {
             
             guard !view.isEmpty && !item.isEmpty && !type.isEmpty else { continue }
             guard !view.hasPrefix("[") && !item.hasPrefix("[") && !type.hasPrefix("[") else { continue }
-            
+
+            // Feedback sobre claves inválidas
+            let key = "\(view)_\(item)_\(type)"
+            if let reason = key.invalidLocalizationKeyReason, !reason.isEmpty {
+                Self.logger.error("Invalid localization key: \(key, privacy: .public) — Reason: \(reason, privacy: .public)")
+                continue
+            }
             // Extract translations starting from column 4
             let values = Array(row.dropFirst(4))
             var translations: [String: String] = [:]
-            
+
             for index in languages.indices {
                 if index < values.count {
                     let val = values[index].trimmedContent
@@ -128,16 +134,16 @@ public struct LocalizationGenerator: Sendable {
                     }
                 }
             }
-            
+
             guard !translations.isEmpty else { continue }
-            
+
             let entry = LocalizationEntry(
                 view: view,
                 item: item,
                 type: type,
                 translations: translations
             )
-            
+
             entries.append(entry)
         }
 
@@ -349,7 +355,7 @@ public struct LocalizationGenerator: Sendable {
     // MARK: - Cleanup Temporary CSV
     
     private func cleanupTemporaryCSV(at csvPath: String) async throws {
-        Self.logger.info("Cleaning up temporary CSV file: \(csvPath)")
+        Self.logger.info("Cleaning up temporary CSV file: \(csvPath, privacy: .public)")
         
         let fileManager = FileManager.default
         let fileURL = URL(fileURLWithPath: csvPath)
@@ -357,12 +363,12 @@ public struct LocalizationGenerator: Sendable {
         do {
             if fileManager.fileExists(atPath: csvPath) {
                 try fileManager.removeItem(at: fileURL)
-                Self.logger.info("Successfully deleted temporary CSV: \(csvPath)")
+                Self.logger.info("Successfully deleted temporary CSV: \(csvPath, privacy: .public)")
             } else {
-                Self.logger.debug("CSV file not found, skipping cleanup: \(csvPath)")
+                Self.logger.debug("CSV file not found, skipping cleanup: \(csvPath, privacy: .public)")
             }
         } catch {
-            Self.logger.error("Failed to delete temporary CSV: \(error.localizedDescription)")
+            Self.logger.error("Failed to delete temporary CSV: \(error.localizedDescription, privacy: .public)")
         }
     }
 }

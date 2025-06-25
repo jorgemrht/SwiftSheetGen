@@ -47,7 +47,7 @@ public struct XcodeIntegration: Sendable {
                 }
             }
         } catch {
-            logger.error("Error reading directory: \(error.localizedDescription)")
+            logger.error("Directory read failed: \(error.localizedDescription, privacy: .public)")
         }
         
         return nil

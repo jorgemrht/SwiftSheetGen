@@ -86,7 +86,10 @@ public struct XcodeIntegration: Sendable {
                 newBuildFileReferences.append(buildFileReference)
                 
                 updatedContent = addToMainGroup(updatedContent, fileUUID: uuid, fileName: "Localizable.strings", language: language)
-                updatedContent = addToResourcesBuildPhase(updatedContent, buildUUID: buildUUID)
+                if let mainTargetUUID = findMainTargetUUID(in: updatedContent),
+                   let resourcesPhaseUUID = findBuildPhaseUUID(in: updatedContent, targetUUID: mainTargetUUID, phaseName: "Resources") {
+                    updatedContent = addToSpecificBuildPhase(updatedContent, buildUUID: buildUUID, phaseUUID: resourcesPhaseUUID, fileType: "Resources")
+                }
                 hasChanges = true
             } else if forceUpdateExisting {
                 logger.info("Updating existing \(localizableStringsPath) in project")
@@ -115,7 +118,10 @@ public struct XcodeIntegration: Sendable {
                 newBuildFileReferences.append(buildFileReference)
                 
                 updatedContent = addToMainGroup(updatedContent, fileUUID: uuid, fileName: enumFileName)
-                updatedContent = addToSourcesBuildPhase(updatedContent, buildUUID: buildUUID)
+                if let mainTargetUUID = findMainTargetUUID(in: updatedContent),
+                   let sourcesPhaseUUID = findBuildPhaseUUID(in: updatedContent, targetUUID: mainTargetUUID, phaseName: "Sources") {
+                    updatedContent = addToSpecificBuildPhase(updatedContent, buildUUID: buildUUID, phaseUUID: sourcesPhaseUUID, fileType: "Sources")
+                }
                 hasChanges = true
             } else {
                 logger.info("Swift enum file already exists in project: \(enumFileName)")
@@ -208,23 +214,30 @@ public struct XcodeIntegration: Sendable {
         )
     }
     
-    private static func addToResourcesBuildPhase(_ content: String, buildUUID: String) -> String {
-        let pattern = "(/* Resources \\*/ = \\{[\\s\\S]*?files = \\([\\s\\S]*?)(\n\\t\\t\\t\\);)"
-        let replacement = "$1\n\t\t\t\t\(buildUUID) /* Localizable.strings in Resources */,$2"
-        return content.replacingOccurrences(
-            of: pattern,
-            with: replacement,
-            options: .regularExpression
-        )
+    private static func findMainTargetUUID(in pbxproj: String) -> String? {
+        let projectTargetRegex = try! NSRegularExpression(pattern: #"targets = \(\s*([A-Z0-9]{24})"#, options: [])
+        guard let match = projectTargetRegex.firstMatch(in: pbxproj, options: [], range: NSRange(pbxproj.startIndex..., in: pbxproj)),
+              let targetRange = Range(match.range(at: 1), in: pbxproj) else { return nil }
+        return String(pbxproj[targetRange])
     }
-    
-    private static func addToSourcesBuildPhase(_ content: String, buildUUID: String) -> String {
-        let pattern = "(/* Sources \\*/ = \\{[\\s\\S]*?files = \\([\\s\\S]*?)(\n\\t\\t\\t\\);)"
-        let replacement = "$1\n\t\t\t\t\(buildUUID) /* Swift file in Sources */,$2"
-        return content.replacingOccurrences(
-            of: pattern,
-            with: replacement,
-            options: .regularExpression
-        )
+
+    private static func findBuildPhaseUUID(in pbxproj: String, targetUUID: String, phaseName: String) -> String? {
+        let nativeTargetRegex = try! NSRegularExpression(pattern: #"\#(targetUUID) /\*.*\*/ = \{[^\}]*?buildPhases = \(([^\)]*)\);"#, options: [.dotMatchesLineSeparators])
+        guard let ntMatch = nativeTargetRegex.firstMatch(in: pbxproj, options: [], range: NSRange(pbxproj.startIndex..., in: pbxproj)),
+              let buildPhasesRange = Range(ntMatch.range(at: 2), in: pbxproj) else { return nil }
+        let buildPhases = pbxproj[buildPhasesRange]
+        let phaseRegex = try! NSRegularExpression(pattern: #"([A-Z0-9]{24}) /\* \#(phaseName) \*/"#)
+        if let sMatch = phaseRegex.firstMatch(in: String(buildPhases), options: [], range: NSRange(buildPhases.startIndex..., in: buildPhases)),
+           let phaseRange = Range(sMatch.range(at: 1), in: buildPhases) {
+            return String(buildPhases[phaseRange])
+        }
+        return nil
+    }
+
+    private static func addToSpecificBuildPhase(_ content: String, buildUUID: String, phaseUUID: String, fileType: String) -> String {
+        let pattern = #"(\#(phaseUUID) /\* \#(fileType) \*/ = \{[^\}]*?files = \([^\)]*)(\);)"#
+        let regex = try! NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators])
+        let replacement = "$1\n\t\t\t\t\(buildUUID) /* \(fileType) file */,$2"
+        return regex.stringByReplacingMatches(in: content, options: [], range: NSRange(content.startIndex..., in: content), withTemplate: replacement)
     }
 }

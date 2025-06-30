@@ -28,7 +28,7 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
         
         🔗 Google Sheets URL must be publicly accessible or have sharing permissions enabled.
         """,
-        version: "1.0.0"
+        version: "0.0.4"
     )
     
     // MARK: - Command Arguments & Options with Descriptive Names

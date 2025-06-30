@@ -165,7 +165,8 @@ public struct XcodeIntegration: Sendable {
                 \t\t\(buildUUID) /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = \(fileUUID) /* Localizable.strings */; };
                 """
                 let updatedWithBuildFile = insertBuildFileReferences(content, references: [buildFileReference])
-                return addToResourcesBuildPhase(updatedWithBuildFile, buildUUID: buildUUID)
+                let fileName = URL(fileURLWithPath: localizableStringsPath).lastPathComponent
+                return addToResourcesBuildPhase(updatedWithBuildFile, buildUUID: buildUUID, fileName: fileName)
             }
         }
         
@@ -239,5 +240,20 @@ public struct XcodeIntegration: Sendable {
         let regex = try! NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators])
         let replacement = "$1\n\t\t\t\t\(buildUUID) /* \(fileType) file */,$2"
         return regex.stringByReplacingMatches(in: content, options: [], range: NSRange(content.startIndex..., in: content), withTemplate: replacement)
+    }
+    
+    private static func addToResourcesBuildPhase(_ content: String, buildUUID: String, fileName: String) -> String {
+        let pattern = "(/* Resources \\*/ = \\{[\\s\\S]*?files = \\([\\s\\S]*?)(\\);)"
+        let replacement = "$1\n\t\t\t\t\(buildUUID) /* \(fileName) in Resources */,$2"
+        
+        if let range = content.range(of: pattern, options: .regularExpression) {
+            return content.replacingCharacters(in: range, with: content[range].replacingOccurrences(
+                of: pattern,
+                with: replacement,
+                options: .regularExpression
+            ))
+        }
+
+        return content
     }
 }

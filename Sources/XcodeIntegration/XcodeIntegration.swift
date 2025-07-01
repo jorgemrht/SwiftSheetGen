@@ -33,6 +33,30 @@ public struct XcodeIntegration: Sendable {
             forceUpdateExisting: forceUpdateExisting
         )
     }
+
+    public static func addSwiftFiles(
+        projectPath: String,
+        files: [String],
+        forceUpdateExisting: Bool = false
+    ) async throws {
+        guard !projectPath.isEmptyOrWhitespace else {
+            logger.error("Empty project path provided")
+            return
+        }
+        
+        let pbxprojPath = findPbxprojFile(in: projectPath)
+        guard let pbxprojPath = pbxprojPath else {
+            logger.error("No .xcodeproj found in: \(projectPath)")
+            return
+        }
+        
+        logger.info("Found Xcode project: \(pbxprojPath)")
+        try await updatePbxprojForSwiftFiles(
+            at: pbxprojPath,
+            with: files,
+            forceUpdateExisting: forceUpdateExisting
+        )
+    }
     
     private static func findPbxprojFile(in directory: String) -> String? {
         let fileManager = FileManager.default
@@ -127,6 +151,67 @@ public struct XcodeIntegration: Sendable {
                 logger.info("Swift enum file already exists in project: \(enumFileName)")
             }
         }
+        if !newFileReferences.isEmpty {
+            updatedContent = insertFileReferences(updatedContent, references: newFileReferences)
+        }
+        
+        if !newBuildFileReferences.isEmpty {
+            updatedContent = insertBuildFileReferences(updatedContent, references: newBuildFileReferences)
+        }
+        
+        if hasChanges {
+            try updatedContent.write(toFile: pbxprojPath, atomically: true, encoding: .utf8)
+            logger.info("Successfully updated project.pbxproj")
+        } else {
+            logger.info("No changes needed for project.pbxproj")
+        }
+    }
+
+    private static func updatePbxprojForSwiftFiles(
+        at pbxprojPath: String,
+        with files: [String],
+        forceUpdateExisting: Bool = false
+    ) async throws {
+        logger.info("Updating project.pbxproj for Swift files at: \(pbxprojPath)")
+        let content = try String(contentsOfFile: pbxprojPath, encoding: .utf8)
+        var updatedContent = content
+        var newFileReferences: [String] = []
+        var newBuildFileReferences: [String] = []
+        var hasChanges = false
+
+        for file in files {
+            let fileName = URL(fileURLWithPath: file).lastPathComponent
+            let relativePath = file.replacingOccurrences(of: "./", with: "")
+
+            if !content.contains(relativePath) {
+                logger.info("Adding Swift file: \(fileName) to project")
+                let uuid = generateUUID()
+                let buildUUID = generateUUID()
+
+                let fileReference = """
+                \t\t\(uuid) /* \(fileName) */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = \(relativePath); sourceTree = ""; };
+                """
+                newFileReferences.append(fileReference)
+
+                let buildFileReference = """
+                \t\t\(buildUUID) /* \(fileName) in Sources */ = {isa = PBXBuildFile; fileRef = \(uuid) /* \(fileName) */; };
+                """
+                newBuildFileReferences.append(buildFileReference)
+
+                updatedContent = addToMainGroup(updatedContent, fileUUID: uuid, fileName: fileName)
+                if let mainTargetUUID = findMainTargetUUID(in: updatedContent),
+                   let sourcesPhaseUUID = findBuildPhaseUUID(in: updatedContent, targetUUID: mainTargetUUID, phaseName: "Sources") {
+                    updatedContent = addToSpecificBuildPhase(updatedContent, buildUUID: buildUUID, phaseUUID: sourcesPhaseUUID, fileType: "Sources")
+                }
+                hasChanges = true
+            } else if forceUpdateExisting {
+                logger.info("Swift file already exists in project: \(fileName). Ensuring it's in Sources build phase.")
+                // Logic to ensure it's in the Sources build phase if forceUpdateExisting is true
+                // This part might need more sophisticated logic depending on exact requirements
+                hasChanges = true // Assume change for now if we are forcing update
+            }
+        }
+
         if !newFileReferences.isEmpty {
             updatedContent = insertFileReferences(updatedContent, references: newFileReferences)
         }

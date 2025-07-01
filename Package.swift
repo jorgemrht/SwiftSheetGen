@@ -49,7 +49,7 @@ let package = Package(
                 "CoreExtensions",
                 "XcodeIntegration"
             ],
-            path: "Sources/SheetLocalizer"
+            path: "Sources/Sheet"
         ),
         
         // MARK: - CLI Executable

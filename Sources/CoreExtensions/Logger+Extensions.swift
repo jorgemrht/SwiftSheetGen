@@ -18,10 +18,7 @@ public extension Logger {
     
     /// Google Sheets URL transformation
     static let googleSheetURLTransformer = Logger(subsystem: subsystem, category: "GoogleSheets.URL")
-    
-    /// Swift localization file generation
-    static let localizationGenerator = Logger(subsystem: subsystem, category: "Localization.Generator")
-    
+
     /// Xcode project integration
     static let xcodeIntegration = Logger(subsystem: subsystem, category: "Xcode.Integration")
     
@@ -33,6 +30,13 @@ public extension Logger {
     
     /// Network operations and validation
     static let network = Logger(subsystem: subsystem, category: "Network")
+    
+    /// Swift localization file generation
+    static let localizationGenerator = Logger(subsystem: subsystem, category: "Localization.Generator")
+    
+    /// Color generation operations
+    static let colorGenerator = Logger(subsystem: subsystem, category: "Color.Generator")
+    
 }
 
 // MARK: - Privacy and Performance Extensions

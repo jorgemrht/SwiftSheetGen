@@ -14,45 +14,51 @@ public struct LocalizationGenerator: Sendable {
         self.config = config
     }
 
+    // MARK: - CSV Generate
+    
     public func generate(from csvPath: String) async throws {
+        
         try Task.checkCancellation()
         Self.logger.info("Processing CSV: \(csvPath, privacy: .public)")
-        
+      
+        // 1. Parse CSV
         let content = try String(contentsOfFile: csvPath, encoding: .utf8)
         let rows = try CSVParser.parse(content)
         
+        // 2. Validate CSV
         try validateCSVStructure(rows)
         
         guard rows.count > 3 else {
             throw SheetLocalizerError.insufficientData
         }
 
+        // 3. Get Value From CSV
         let (languages, entries) = try processRows(rows)
         
         guard !languages.isEmpty else {
             throw SheetLocalizerError.csvParsingError("No valid languages were found")
         }
 
+        Self.logger.info("Detected languages: [\(languages.joined(separator: ", ")), privacy: .public]")
+       
         guard !entries.isEmpty else {
             throw SheetLocalizerError.csvParsingError("No valid entries found")
         }
 
-        Self.logger.info("Detected languages: [\(languages.joined(separator: ", ")), privacy: .public]")
         Self.logger.info("Detected entries: \(entries.count, privacy: .public)")
         
-        try Task.checkCancellation()
+        // 4. Generate Localization Files
         try await generateLocalizationFiles(languages: languages, entries: entries)
         
-        try Task.checkCancellation()
         let allKeys = Set(entries.map(\.key)).sorted()
-        
-        try Task.checkCancellation()
         try await generateSwiftEnum(allKeys: allKeys)
         
+        // 5. Add generated files to Xcode (if configured)
         if config.autoAddToXcode {
             try await addGeneratedFilesToXcode(languages: languages)
         }
         
+        // 5. Cleanup Temporary Files
         if config.cleanupTemporaryFiles {
             try await cleanupTemporaryCSV(at: csvPath)
         }
@@ -61,27 +67,29 @@ public struct LocalizationGenerator: Sendable {
     // MARK: - CSV Processing
 
     private func processRows(_ rows: [[String]]) throws -> ([String], [LocalizationEntry]) {
+        
         guard rows.count > 1 else {
             throw SheetLocalizerError.csvParsingError("CSV must have at least 2 rows")
         }
 
-        // Find the header row with [View], [Item], [Type]
         var headerRowIndex = -1
+        
         for (index, row) in rows.enumerated() {
             if row.count > 4 &&
-               row[1].trimmedContent == "[View]" &&
-               row[2].trimmedContent == "[Item]" &&
-               row[3].trimmedContent == "[Type]" {
+               row[1].trimmedContent == LocalizationHeader.view.rawValue &&
+               row[2].trimmedContent == LocalizationHeader.item.rawValue &&
+               row[3].trimmedContent == LocalizationHeader.type.rawValue {
                 headerRowIndex = index
                 break
             }
         }
         
         guard headerRowIndex >= 0 else {
-            throw SheetLocalizerError.csvParsingError("Header row with [View], [Item], [Type] not found")
+            throw SheetLocalizerError.csvParsingError("Header row not found")
         }
         
         let header = rows[headerRowIndex]
+        
         guard header.count > 4 else {
             throw SheetLocalizerError.csvParsingError("Header must have at least 5 columns")
         }
@@ -153,31 +161,30 @@ public struct LocalizationGenerator: Sendable {
     // MARK: - CSV Structure Validation
 
     private func validateCSVStructure(_ rows: [[String]]) throws {
+      
         guard rows.count >= 4 else {
             throw SheetLocalizerError.csvParsingError("CSV must have at least 4 rows")
         }
         
-        // Look for header row with [View], [Item], [Type] structure
         var foundValidHeader = false
         
         for row in rows {
             if row.count >= 5 &&
-               row[1].trimmedContent == "[View]" &&
-               row[2].trimmedContent == "[Item]" &&
-               row[3].trimmedContent == "[Type]" {
+               row[1].trimmedContent == LocalizationHeader.view.rawValue &&
+               row[2].trimmedContent == LocalizationHeader.item.rawValue &&
+               row[3].trimmedContent == LocalizationHeader.type.rawValue {
                 foundValidHeader = true
                 
-                // Check for at least one language column
                 let languageColumns = Array(row.dropFirst(4))
                     .map { $0.trimmedContent }
                     .filter { !$0.isEmpty && !$0.hasPrefix("[") }
                 
                 guard !languageColumns.isEmpty else {
-                    throw SheetLocalizerError.csvParsingError("No language columns found after [Type] column")
+                    throw SheetLocalizerError.csvParsingError("No language columns found after \(LocalizationHeader.type.rawValue) column")
                 }
                 
                 Self.logger.info("CSV Structure validated:")
-                Self.logger.info("  - Header found with structure: [View], [Item], [Type]")
+                Self.logger.info("  - Header found with structure: \(LocalizationHeader.requiredHeaders.joined(separator: ", "))")
                 Self.logger.info("  - Language columns: [\(languageColumns.joined(separator: ", "))]")
                 
                 break
@@ -185,7 +192,7 @@ public struct LocalizationGenerator: Sendable {
         }
         
         guard foundValidHeader else {
-            throw SheetLocalizerError.csvParsingError("Invalid CSV structure. Expected header row with [View], [Item], [Type] format")
+            throw SheetLocalizerError.csvParsingError("Invalid CSV structure. Expected header row with \(LocalizationHeader.requiredHeaders.joined(separator: ", ")) format")
         }
     }
 
@@ -247,11 +254,6 @@ public struct LocalizationGenerator: Sendable {
 
     private func generateSwiftEnum(allKeys: [String]) async throws {
         let outputPath = "\(config.sourceDirectory)/\(config.enumName).swift"
-        
-        let enumGenerator = SwiftEnumGenerator(enumName: config.enumName)
-        
-        let code = enumGenerator.generateCode(allKeys: allKeys)
-        
         let fileURL = URL(fileURLWithPath: outputPath)
         
         try FileManager.default.createDirectory(
@@ -259,6 +261,10 @@ public struct LocalizationGenerator: Sendable {
             withIntermediateDirectories: true,
             attributes: nil
         )
+        
+        
+        let enumGenerator = SwiftEnumGenerator(enumName: config.enumName)
+        let code = enumGenerator.generateCode(allKeys: allKeys)
         
         try code.write(to: fileURL, atomically: true, encoding: .utf8)
         Self.logger.info("Enum generated at: \(outputPath) (\(allKeys.count) cases)")
@@ -268,58 +274,28 @@ public struct LocalizationGenerator: Sendable {
     
     private func addGeneratedFilesToXcode(languages: [String]) async throws {
         Self.logger.info("Auto-adding generated files to Xcode project...")
-        let currentDir = FileManager.default.currentDirectoryPath
-        let searchPaths = [currentDir, "\(currentDir)/..", "\(currentDir)/../.."]
         
-        for searchPath in searchPaths {
-            let resolvedPath = URL(fileURLWithPath: searchPath).standardized.path
-            do {
-                let contents = try FileManager.default.contentsOfDirectory(atPath: resolvedPath)
-                if let xcodeproj = contents.first(where: { $0.hasSuffix(".xcodeproj") }) {
-                    Self.logger.info("Found Xcode project: \(xcodeproj) in \(resolvedPath)")
-                    
-                    let localizationFiles: [String]
-                    
-                    localizationFiles = languages.map { "\(config.outputDirectory)/\($0).lproj/Localizable.strings" }
-                    
-                    let enumFile = "\(config.sourceDirectory)/\(config.enumName).swift"
-                    
-                    try await XcodeIntegration.addLocalizationFiles(
-                        projectPath: resolvedPath,
-                        generatedFiles: localizationFiles,
-                        languages: languages,
-                        enumFile: enumFile,
-                        forceUpdateExisting: config.forceUpdateExistingXcodeFiles
-                    )
-                    return
-                }
-            } catch {
-                Self.logger.debug("Could not read directory: \(resolvedPath)")
-            }
+        guard let projectPath = try GeneratorHelper.findXcodeProjectPath(logger: Self.logger) else {
+            Self.logger.error("No .xcodeproj found in current or parent directories")
+            return
         }
-        
-        Self.logger.error("No .xcodeproj found in current or parent directories")
+
+        let localizationFiles = languages.map { "\(config.outputDirectory)/\($0).lproj/Localizable.strings" }
+        let enumFile = "\(config.sourceDirectory)/\(config.enumName).swift"
+
+        try await XcodeIntegration.addLocalizationFiles(
+            projectPath: projectPath,
+            generatedFiles: localizationFiles,
+            languages: languages,
+            enumFile: enumFile,
+            forceUpdateExisting: config.forceUpdateExistingXcodeFiles
+        )
     }
 
-    
     // MARK: - Cleanup Temporary CSV
     
     private func cleanupTemporaryCSV(at csvPath: String) async throws {
-        Self.logger.info("Cleaning up temporary CSV file: \(csvPath, privacy: .public)")
-        
-        let fileManager = FileManager.default
-        let fileURL = URL(fileURLWithPath: csvPath)
-        
-        do {
-            if fileManager.fileExists(atPath: csvPath) {
-                try fileManager.removeItem(at: fileURL)
-                Self.logger.info("Successfully deleted temporary CSV: \(csvPath, privacy: .public)")
-            } else {
-                Self.logger.debug("CSV file not found, skipping cleanup: \(csvPath, privacy: .public)")
-            }
-        } catch {
-            Self.logger.error("Failed to delete temporary CSV: \(error.localizedDescription, privacy: .public)")
-        }
+        try await GeneratorHelper.cleanupTemporaryFile(at: csvPath, logger: Self.logger)
     }
 }
 

@@ -3,7 +3,9 @@ import XcodeIntegration
 import CoreExtensions
 import os.log
 
-public struct ColorGenerator: Sendable {
+// MARK: - Color Generator
+
+public struct ColorGenerator:  Sendable {
 
     private let config: ColorConfig
     private static let logger = Logger.colorGenerator
@@ -12,18 +14,26 @@ public struct ColorGenerator: Sendable {
         self.config = config
     }
 
-    public func generate(from urlString: String) async throws {
+    // MARK: - CSV Generate
+    
+    public func generate(from csvPath: String) async throws {
+        
         try Task.checkCancellation()
-        Self.logger.info("Starting color generation from: \(urlString, privacy: .public)")
+        
+        Self.logger.info("Processing CSV \(csvPath, privacy: .public)")
 
-        // 1. Download CSV
-        let tempCSVPath = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".csv").path
-        let downloader = CSVDownloader.createWithDefaults()
-        try await downloader.download(from: urlString, to: tempCSVPath)
-
-        // 2. Parse CSV
-        let content = try String(contentsOfFile: tempCSVPath, encoding: .utf8)
+        // 1. Parse CSV
+        let content = try String(contentsOfFile: csvPath, encoding: .utf8)
         let rows = try CSVParser.parse(content)
+        
+        // 2. Validate CSV
+        try validateCSVStructure(rows)
+        
+        guard rows.count > 3 else {
+            throw SheetLocalizerError.insufficientData
+        }
+        
+        // 3. Get Value From CSV
         let colorEntries = try processRows(rows)
 
         guard !colorEntries.isEmpty else {
@@ -32,68 +42,113 @@ public struct ColorGenerator: Sendable {
 
         Self.logger.info("Detected \(colorEntries.count) color entries.")
 
-        // 3. Generate Colors.swift
+        // 4. Generate Colors Files
         try await generateColorsFile(entries: colorEntries)
-
-        // 4. Generate Color+Dynamic.swift
         try await generateColorDynamicFile()
 
         // 5. Add generated files to Xcode (if configured)
         if config.autoAddToXcode {
             try await addGeneratedFilesToXcode()
         }
-
-        // 6. Cleanup temporary CSV
-        try await cleanupTemporaryCSV(at: tempCSVPath)
-
-        Self.logger.info("Color generation completed successfully.")
+        
+        // 5. Cleanup Temporary Files
+        if config.cleanupTemporaryFiles {
+            try await cleanupTemporaryCSV(at: csvPath)
+        }
     }
 
     // MARK: - CSV Processing
 
     private func processRows(_ rows: [[String]]) throws -> [ColorEntry] {
+        
         guard rows.count > 1 else {
-            throw SheetLocalizerError.csvParsingError("CSV must have at least 2 rows (header + data).")
+            throw SheetLocalizerError.csvParsingError("CSV must have at least 2 rows")
         }
-
-        let header = rows[0].map { $0.trimmedContent }
-        let expectedHeaders = ["Color Name", "Any Hex Value", "Light Hex Value", "Dark Hex Value"]
-
-        // Basic header validation
-        guard header.count >= expectedHeaders.count &&
-              header[0] == expectedHeaders[0] &&
-              header[1] == expectedHeaders[1] &&
-              header[2] == expectedHeaders[2] &&
-              header[3] == expectedHeaders[3] else {
-            throw SheetLocalizerError.csvParsingError("Invalid CSV header. Expected: \(expectedHeaders.joined(separator: ", ")). Got: \(header.joined(separator: ", ")).")
+        
+        var headerRowIndex = -1
+        
+        for (index, row) in rows.enumerated() {
+            if row.count > 5 &&
+               row[1].trimmedContent == ColorHeader.name.rawValue &&
+               row[2].trimmedContent == ColorHeader.anyHex.rawValue &&
+               row[3].trimmedContent == ColorHeader.lightHex.rawValue &&
+               row[4].trimmedContent == ColorHeader.darkHex.rawValue {
+                headerRowIndex = index
+                break
+            }
+        }
+        
+        guard headerRowIndex >= 0 else {
+            throw SheetLocalizerError.csvParsingError("Header row not found with expected columns: \(ColorHeader.name.rawValue), \(ColorHeader.anyHex.rawValue), \(ColorHeader.lightHex.rawValue), \(ColorHeader.darkHex.rawValue)")
         }
 
         var entries: [ColorEntry] = []
-        for (rowIndex, row) in rows.dropFirst().enumerated() { // Skip header row
-            if row.count < expectedHeaders.count {
-                Self.logger.warning("Skipping row \(rowIndex + 2) due to insufficient columns: \(row.joined(separator: ", ")).")
-                continue
-            }
 
-            let name = row[0].trimmedContent
-            let anyHex = row[1].trimmedContent.isEmpty ? nil : row[1].trimmedContent
-            let lightHex = row[2].trimmedContent.isEmpty ? nil : row[2].trimmedContent
-            let darkHex = row[3].trimmedContent.isEmpty ? nil : row[3].trimmedContent
+        // Process rows after header
+        for row in rows.dropFirst(headerRowIndex + 1) {
+            if row.count < 6 { continue }
+
+            // Skip comment and separator rows
+            let firstCol = row.first?.trimmedContent ?? ""
+
+            if firstCol == "[END]" { break }
+            if firstCol == "[COMMENT]" || firstCol.hasPrefix("[") { continue }
+
+            let name = row[1].trimmedContent
+            let anyHex = row[2].trimmedContent
+            let lightHex = row[3].trimmedContent
+            let darkHex = row[4].trimmedContent
 
             guard !name.isEmpty else {
-                Self.logger.warning("Skipping row \(rowIndex + 2) due to empty color name.")
+                Self.logger.warning("Skipping row due to empty name: \(row, privacy: .public)")
+                continue
+            }
+            guard !name.hasPrefix("[") else {
+                Self.logger.warning("Skipping row due to name starting with '[': \(row, privacy: .public)")
                 continue
             }
 
-            // At least one hex value must be present
-            guard anyHex != nil || lightHex != nil || darkHex != nil else {
-                Self.logger.warning("Skipping row \(rowIndex + 2) for color '\(name)' as no hex values are provided.")
+            if anyHex.isEmpty && lightHex.isEmpty && darkHex.isEmpty {
+                Self.logger.warning("Skipping row '\(name)' due to all hex values being empty: \(row, privacy: .public)")
                 continue
             }
 
-            entries.append(ColorEntry(name: name, anyHex: anyHex, lightHex: lightHex, darkHex: darkHex))
+            entries.append(ColorEntry(
+                name: name,
+                anyHex: anyHex.isEmpty ? nil : anyHex,
+                lightHex: lightHex.isEmpty ? nil : lightHex,
+                darkHex: darkHex.isEmpty ? nil : darkHex
+            ))
         }
         return entries
+    }
+
+    // MARK: - CSV Structure Validation
+
+    private func validateCSVStructure(_ rows: [[String]]) throws {
+     
+        guard rows.count >= 2 else {
+            throw SheetLocalizerError.csvParsingError("CSV must have at least 2 rows (header and data).")
+        }
+
+        var foundValidHeader = false
+        
+        for row in rows {
+            if row.count >= 6 &&
+               row[1].trimmedContent == ColorHeader.name.rawValue &&
+               row[2].trimmedContent == ColorHeader.anyHex.rawValue &&
+               row[3].trimmedContent == ColorHeader.lightHex.rawValue &&
+               row[4].trimmedContent == ColorHeader.darkHex.rawValue {
+                foundValidHeader = true
+                break
+            }
+        }
+        
+        guard foundValidHeader else {
+            throw SheetLocalizerError.csvParsingError("Invalid CSV structure. Expected header with \(ColorHeader.name.rawValue), \(ColorHeader.anyHex.rawValue), \(ColorHeader.lightHex.rawValue), \(ColorHeader.darkHex.rawValue).")
+        }
+        
+        Self.logger.info("CSV Structure validated successfully.")
     }
 
     // MARK: - File Generation
@@ -136,54 +191,25 @@ public struct ColorGenerator: Sendable {
 
     private func addGeneratedFilesToXcode() async throws {
         Self.logger.info("Auto-adding generated color files to Xcode project...")
-        let currentDir = FileManager.default.currentDirectoryPath
-        let searchPaths = [currentDir, "\(currentDir)/..", "\(currentDir)/../.."]
-
-        for searchPath in searchPaths {
-            let resolvedPath = URL(fileURLWithPath: searchPath).standardized.path
-            do {
-                let contents = try FileManager.default.contentsOfDirectory(atPath: resolvedPath)
-                if let xcodeproj = contents.first(where: { $0.hasSuffix(".xcodeproj") }) {
-                    Self.logger.info("Found Xcode project: \(xcodeproj) in \(resolvedPath)")
-
-                    let colorsFile = "\(config.outputDirectory)/Colors.swift"
-                    let colorDynamicFile = "\(config.outputDirectory)/Color+Dynamic.swift"
-
-                    try await XcodeIntegration.addSwiftFiles(
-                        projectPath: resolvedPath,
-                        files: [colorsFile, colorDynamicFile],
-                        forceUpdateExisting: config.forceUpdateExistingXcodeFiles
-                    )
-                    return
-                }
-            } catch {
-                Self.logger.debug("Could not read directory: \(resolvedPath)")
-            }
+        
+        guard let projectPath = try GeneratorHelper.findXcodeProjectPath(logger: Self.logger) else {
+            Self.logger.error("No .xcodeproj found in current or parent directories")
+            return
         }
 
-        Self.logger.error("No .xcodeproj found in current or parent directories")
+        let colorsFile = "\(config.outputDirectory)/Colors.swift"
+        let colorDynamicFile = "\(config.outputDirectory)/Color+Dynamic.swift"
+
+        try await XcodeIntegration.addSwiftFiles(
+            projectPath: projectPath,
+            files: [colorsFile, colorDynamicFile],
+            forceUpdateExisting: config.forceUpdateExistingXcodeFiles
+        )
     }
 
     // MARK: - Cleanup Temporary CSV
 
     private func cleanupTemporaryCSV(at csvPath: String) async throws {
-        Self.logger.info("Cleaning up temporary CSV file: \(csvPath, privacy: .public)")
-
-        let fileManager = FileManager.default
-        let fileURL = URL(fileURLWithPath: csvPath)
-
-        do {
-            if fileManager.fileExists(atPath: csvPath) {
-                try fileManager.removeItem(at: fileURL)
-                Self.logger.info("Successfully deleted temporary CSV: \(csvPath, privacy: .public)")
-            } else {
-                Self.logger.debug("CSV file not found, skipping cleanup: \(csvPath, privacy: .public)")
-            }
-        } catch {
-            Self.logger.error("Failed to delete temporary CSV: \(error.localizedDescription, privacy: .public)")
-        }
+        try await GeneratorHelper.cleanupTemporaryFile(at: csvPath, logger: Self.logger)
     }
 }
-
-// Assuming a new Logger category for colors, similar to LocalizationGenerator
-

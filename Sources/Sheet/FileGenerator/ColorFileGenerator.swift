@@ -54,11 +54,8 @@ public struct ColorFileGenerator: Sendable {
                 colorInitializer = ".clear // Fallback for missing hex values"
             }
 
-            code += """
-
-            /// \(entry.name)
-            static var \(safeName): Color { \(colorInitializer) }
-            """
+            code += "\n    /// \(entry.name)"
+            code += "\n    static var \(safeName): Color { \(colorInitializer) }"
         }
 
         code += """
@@ -141,11 +138,9 @@ public struct ColorFileGenerator: Sendable {
 
         for entry in entries {
             let safeName = entry.name.replacingOccurrences(of: " ", with: "")
-            code += """
-                        ColorCell(name: "\(entry.name)", color: .\(safeName))
-            """
+            code += "\n                    ColorCell(name: \"\(entry.name)\", color: .\(safeName))"
         }
-
+        code += "\n"
         code += """
                     }
                     .padding()

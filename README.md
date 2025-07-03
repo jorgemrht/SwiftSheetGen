@@ -1,71 +1,177 @@
 # SwiftSheetGen
 
-SwiftSheetGen is a modern Swift 6.1+ tool that automates localization file generation for iOS and macOS projects directly from Google Sheets. It provides a complete solution that downloads, processes, and generates .strings files and type-safe Swift enums.
+<p align="center">
+  <img src="" alt="SwiftSheetGen Logo" width="200"/>
+</p>
 
-## Why SwiftSheetGen?
+<p align="center">
+  <strong>Generate type-safe Swift code for localizations and colors directly from a Google Sheet.</strong>
+</p>
 
-### **Problems It Solves**
+<p align="center">
+  <a href="https://github.com/jorge/SwiftSheetGen/actions"><img src="https://img.shields.io/github/actions/workflow/status/jorge/SwiftSheetGen/swift.yml?branch=main&style=for-the-badge" alt="Build Status"></a>
+  <a href="https://swift.org"><img src="https://img.shields.io/badge/Swift-6.0+-orange?style=for-the-badge" alt="Swift Version"></a>
+  <a href="/LICENSE"><img src="https://img.shields.io/github/license/jorge/SwiftSheetGen?style=for-the-badge" alt="License"></a>
+</p>
 
-- ✅ **Automatic synchronization** from collaborative Google Sheets
-- ✅ **Eliminates typo errors** with type-safe code
-- ✅ **Intelligent autocompletion** in Xcode
-- ✅ **Compile-time validation** of all keys
-- ✅ **Collaborative workflow** with translators and designers
-- ✅ **Cross-platform generation** (iOS/macOS) from a single source
-- ✅ **Swift 6.1+ native** with modern concurrency
-- ✅ **No external dependencies** (Ruby/Gems free)
+---
+
+**SwiftSheetGen** is a command-line tool that automates the generation of Swift assets. It transforms your team's collaborative Google Sheets for strings and colors into compile-time safe code, eliminating manual errors and keeping your Xcode project in perfect sync.
+
+## Features
+
+- ✅ **Type-Safe Code**: Generates Swift enums for localizations (`L10n`) and extensions for `Color`, preventing typos and runtime errors.
+- ✅ **Google Sheets as a CMS**: Use a single Google Sheet as a source of truth for designers, translators, and developers.
+- ✅ **Automated Workflow**: Downloads and processes sheets in real-time, generating files directly into your project.
+- ✅ **Xcode Integration**: Automatically adds the generated files to your Xcode project structure.
+- ✅ **Modern & Native**: Built with Swift 6, leveraging modern concurrency. No external dependencies like Ruby required.
+- ✅ **Dual Asset Support**: Manages both localizable strings and design system colors from the same tool.
 
 ## Installation
 
-### CLI Tool (Recommended)
----
-Install as a command-line tool for project automation:
+You can install SwiftSheetGen using the Swift Package Manager.
 
-### Swift Package Manager
----
+#### As a CLI Tool (Recommended)
 
-***Add SwiftSheetGen to your Package.swift:***
-
-```swift
-dependencies: [
-    .package(url: "https://github.com/your-username/SwiftSheetGen", from: "1.0.0")
-]
-```
-
-### Build from Source
----
-
-***Install CLI tool globally from source code:***
+Build the tool from the source and move it to a location in your `PATH`.
 
 ```bash
-git clone https://github.com/your-username/SwiftSheetGen.git
+git clone https://github.com/jorge/SwiftSheetGen.git
 cd SwiftSheetGen
 swift build -c release
-cp .build/release/swiftsheetgen /usr/local/bin/
+sudo cp .build/release/swiftsheetgen /usr/local/bin/
 ```
 
-**Verify installation:**
-
+Verify the installation by running:
 ```bash
 swiftsheetgen --version
 ```
 
-## Google Sheet Configuration
+#### As a Package Dependency
 
-### Required Format
+Add `SwiftSheetGen` as a dependency to your `Package.swift` file to use its core libraries.
 
-**Your Google Sheet must follow this specific structure:**
+```swift
+dependencies: [
+    .package(url: "https://github.com/jorge/SwiftSheetGen.git", from: "1.0.0")
+]
+```
 
-| Status | View | Item | Type | en | es | fr |
-|--------|------|------|------|----|----|----| 
-| ✅ | LoginView | title | label | Login | Iniciar Sesión | Connexion |
-| ✅ | LoginView | button | action | Sign In | Entrar | Se connecter |
-| ⚠️ | ProfileView | header | label | Profile | Perfil | Profil |
+## Usage
 
-### **Column Explanation**
+SwiftSheetGen is run from the command line. You can generate assets for localizations and colors separately.
 
-- **Status**: Indicates if text is reviewed (✅) or pending (⚠️)
-- **View**: View/screen name
-- **Item**: Specific element (button, label, etc.)
-- **Type**: Element type (label, button, placeholder, etc.)
-- **Languages**: One column per supported language
+#### Generating Localizations
+
+```bash
+swiftsheetgen localizables \
+  --url "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/export?format=csv" \
+  --output "path/to/your/project/Sources/Generated/"
+```
+
+#### Generating Colors
+
+```bash
+swiftsheetgen colors \
+  --url "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/export?format=csv&gid=YOUR_GID" \
+  --output "path/to/your/project/Sources/Generated/"
+```
+
+## Configuration
+
+### Google Sheet Format
+
+Your Google Sheet must have a specific structure for SwiftSheetGen to parse it correctly.
+
+#### For Localizations
+
+The sheet should contain columns for keys, comments, and each language.
+
+| key | comment | en | es |
+|---|---|---|---|
+| `login.title` | Title on the login screen | Welcome! | ¡Bienvenido! |
+| `login.button.signIn` | Sign in button text | Sign In | Iniciar Sesión |
+
+#### For Colors
+
+The sheet for colors requires a name and hex values for light, dark, or any appearance.
+
+| name | anyHex | lightHex | darkHex |
+|---|---|---|---|
+| `primary` | | `#68478E` | `#866CA5` |
+| `onPrimary` | | `#FFFFFF` | `#00172E` |
+| `background` | `#F2F2F7` | | |
+
+## Generated Code Examples
+
+#### Localizations (`Strings.swift`)
+
+```swift
+// Auto-generated by SwiftSheetGen
+import Foundation
+
+public enum L10n: String, CaseIterable, Sendable {
+    case commonAppNamePreText = "common_app_name_pre_text"
+    case commonAppNameText = "common_app_name_text"
+    case commonLanguageCodeText = "common_language_code_text"
+    case loginForgotPasswordButton = "login_forgot_password_button"
+    case loginPasswordText = "login_password_text"
+    case loginSendButton = "login_send_button"
+    case loginSignUpButton = "login_sign_up_button"
+    case loginSignUpText = "login_sign_up_text"
+    case loginTitleText = "login_title_text"
+    case loginUsernameText = "login_username_text"
+    case profileVersionText = "profile_version_text"
+
+    /// Returns the localized string for this key
+    public var localized: String {
+        NSLocalizedString(self.rawValue, bundle: .main, comment: "")
+    }
+    
+    /// Returns a formatted localized string with arguments
+    public func localized(_ args: CVarArg...) -> String {
+        String(format: localized, arguments: args)
+    }
+    
+    /// Returns localized string with specific bundle
+    public func localized(bundle: Bundle) -> String {
+        NSLocalizedString(self.rawValue, bundle: bundle, comment: "")
+    }
+    
+    /// SwiftUI compatible computed property
+    @available(iOS 13.0, macOS 10.15, *)
+    public var localizedString: LocalizedStringKey {
+        LocalizedStringKey(self.rawValue)
+    }
+}
+```
+
+#### Colors (`Colors.swift`)
+
+```swift
+// Auto-generated by SwiftSheetGen
+import SwiftUI
+
+public extension ShapeStyle where Self == Color {
+    /// primaryBackgroundColor
+    static var primaryBackgroundColor: Color { .init(light: .init(hex: 0xFFF), dark: .init(hex: 0xFFF)) }
+    /// secondaryBackgroundColor
+    static var secondaryBackgroundColor: Color { .init(light: .init(hex: 0xFFF), dark: .init(hex: 0xFFF)) }
+    /// tertiaryBackgroundColor
+    static var tertiaryBackgroundColor: Color { .init(light: .init(hex: 0xFFF), dark: .init(hex: 0xFFF)) }
+    /// primaryTextColor
+    static var primaryTextColor: Color { .init(light: .init(hex: 0xFFF), dark: .init(hex: 0xFFF)) }
+    /// secondaryTextColor
+    static var secondaryTextColor: Color { .init(light: .init(hex: 0xFFF), dark: .init(hex: 0xFFF)) }
+    /// tertiaryTextColor
+    static var tertiaryTextColor: Color { .init(light: .init(hex: 0xFFF), dark: .init(hex: 0xFFF)) }
+    /// placeholderTextColor
+    static var placeholderTextColor: Color { .init(light: .init(hex: 0xFFF), dark: .init(hex: 0xFFF)) }
+}
+
+// ... plus extensions for dynamic colors and a SwiftUI preview
+```
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

@@ -12,35 +12,179 @@ public struct ColorFileGenerator: Sendable {
 
         import SwiftUI
 
-        public extension Color {
+        #if canImport(AppKit)
+        import AppKit
+        #endif
+
+        #if canImport(UIKit)
+        import UIKit
+        #endif
+
+        public extension ShapeStyle where Self == Color {
         """
 
         for entry in entries {
-            let safeName = entry.name.replacingOccurrences(of: " ", with: "") // Simple sanitization for now
+            let safeName = entry.name.replacingOccurrences(of: " ", with: "")
+            
+            var lightHex: String?
+            if let hexString = entry.lightHex?.dropFirst(), let hexValue = UInt(hexString, radix: 16) {
+                lightHex = String(format: "0x%X", hexValue)
+            }
+            
+            var darkHex: String?
+            if let hexString = entry.darkHex?.dropFirst(), let hexValue = UInt(hexString, radix: 16) {
+                darkHex = String(format: "0x%X", hexValue)
+            }
+            
+            var anyHex: String?
+            if let hexString = entry.anyHex?.dropFirst(), let hexValue = UInt(hexString, radix: 16) {
+                anyHex = String(format: "0x%X", hexValue)
+            }
+
+            var colorInitializer = ""
+            if let light = lightHex, let dark = darkHex {
+                colorInitializer = ".init(light: .init(hex: \(light)), dark: .init(hex: \(dark)))"
+            } else if let any = anyHex {
+                colorInitializer = ".init(hex: \(any))"
+            } else if let light = lightHex {
+                colorInitializer = ".init(hex: \(light))"
+            } else if let dark = darkHex {
+                colorInitializer = ".init(hex: \(dark))"
+            } else {
+                colorInitializer = ".clear // Fallback for missing hex values"
+            }
+
             code += """
 
             /// \(entry.name)
-            static var \(safeName): Color {
-                Color(ColorName.\(safeName))
-            }
+            static var \(safeName): Color { \(colorInitializer) }
             """
         }
 
         code += """
+
         }
 
-        public enum ColorName: String {
+        public extension Color {
+            init(hex: UInt, alpha: Double = 1) {
+                self.init(
+                    .sRGB,
+                    red: Double((hex >> 16) & 0xFF) / 255,
+                    green: Double((hex >> 08) & 0xFF) / 255,
+                    blue: Double((hex >> 00) & 0xFF) / 255,
+                    opacity: alpha
+                )
+            }
+
+            init(light: Color, dark: Color) {
+                #if canImport(UIKit)
+                self.init(light: UIColor(light), dark: UIColor(dark))
+                #else
+                self.init(light: NSColor(light), dark: NSColor(dark))
+                #endif
+            }
+
+            #if canImport(UIKit)
+            init(light: UIColor, dark: UIColor) {
+                #if os(watchOS)
+                // watchOS does not support light mode / dark mode
+                // Per Apple HIG, prefer dark-style interfaces
+                self.init(uiColor: dark)
+                #else
+                self.init(uiColor: UIColor(dynamicProvider: { traits in
+                    switch traits.userInterfaceStyle {
+                    case .light, .unspecified:
+                        return light
+
+                    case .dark:
+                        return dark
+
+                    @unknown default:
+                        assertionFailure("Unknown userInterfaceStyle: \\(traits.userInterfaceStyle)")
+                        return light
+                    }
+                }))
+                #endif
+            }
+            #endif
+
+            #if canImport(AppKit)
+            init(light: NSColor, dark: NSColor) {
+                self.init(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+                    switch appearance.name {
+                    case .aqua,
+                         .vibrantLight,
+                         .accessibilityHighContrastAqua,
+                         .accessibilityHighContrastVibrantLight:
+                        return light
+
+                    case .darkAqua,
+                         .vibrantDark,
+                         .accessibilityHighContrastDarkAqua,
+                         .accessibilityHighContrastVibrantDark:
+                        return dark
+
+                    default:
+                        assertionFailure("Unknown appearance: \\(appearance.name)")
+                        return light
+                    }
+                }))
+            }
+            #endif
+        }
+
+        struct ColorPaletteGrid: View {
+            var body: some View {
+                ScrollView {
+                    LazyVStack(alignment: .leading) {
         """
 
         for entry in entries {
             let safeName = entry.name.replacingOccurrences(of: " ", with: "")
             code += """
-            case \(safeName)
+                        ColorCell(name: "\(entry.name)", color: .\(safeName))
             """
         }
+
         code += """
+                    }
+                    .padding()
+                }
+            }
+        }
+
+        struct ColorCell: View {
+            let name: String
+            let color: Color
+
+            var body: some View {
+                ZStack {
+                    color
+                        .frame(height: 80)
+                        .frame(maxWidth: .infinity)
+                        .cornerRadius(8)
+                        .shadow(radius: 2)
+
+                    Text(name)
+                        .font(.caption.bold())
+                        .foregroundStyle(Color.white)
+                        .shadow(color: .black, radius: 1)
+                }
+            }
+        }
+
+        #Preview {
+            HStack(spacing: 0) {
+                ColorPaletteGrid()
+                    .background(Color(white: 0.95))
+                    .colorScheme(.light)
+                ColorPaletteGrid()
+                    .background(Color(white: 0.1))
+                    .colorScheme(.dark)
+            }
         }
         """
         return code
     }
+
 }

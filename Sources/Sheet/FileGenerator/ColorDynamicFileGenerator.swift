@@ -1,6 +1,10 @@
 import Foundation
 import SwiftUI
 
+#if canImport(AppKit)
+import AppKit
+#endif
+
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -15,68 +19,67 @@ public struct ColorDynamicFileGenerator: Sendable {
         // Generated on: \(Date().formatted(date: .abbreviated, time: .shortened))
 
         import SwiftUI
+
+        #if canImport(AppKit)
+        import AppKit
+        #endif
+
         #if canImport(UIKit)
         import UIKit
         #endif
 
-        public extension Color {
-            init(_ name: ColorName) {
-                self.init(uiColor: UIColor(named: name.rawValue) ?? .clear)
+        extension Color {
+            init(light: Color, dark: Color) {
+                #if canImport(UIKit)
+                self.init(light: UIColor(light), dark: UIColor(dark))
+                #else
+                self.init(light: NSColor(light), dark: NSColor(dark))
+                #endif
             }
-        }
 
-        public extension UIColor {
-            convenience init?(hex: String) {
-                let r, g, b, a: CGFloat
-
-                if hex.hasPrefix("#") {
-                    let start = hex.index(hex.startIndex, offsetBy: 1)
-                    let hexColor = String(hex[start...])
-
-                    if hexColor.count == 6 {
-                        let scanner = Scanner(string: hexColor)
-                        var hexNumber: UInt64 = 0
-
-                        if scanner.scanHexInt64(&hexNumber) {
-                            r = CGFloat((hexNumber & 0xff0000) >> 16) / 255
-                            g = CGFloat((hexNumber & 0x00ff00) >> 8) / 255
-                            b = CGFloat(hexNumber & 0x0000ff) / 255
-                            a = 1.0
-
-                            self.init(red: r, green: g, blue: b, alpha: a)
-                            return
-                        }
-                    } else if hexColor.count == 8 {
-                        let scanner = Scanner(string: hexColor)
-                        var hexNumber: UInt64 = 0
-
-                        if scanner.scanHexInt64(&hexNumber) {
-                            r = CGFloat((hexNumber & 0xff000000) >> 24) / 255
-                            g = CGFloat((hexNumber & 0x00ff0000) >> 16) / 255
-                            b = CGFloat((hexNumber & 0x0000ff00) >> 8) / 255
-                            a = CGFloat(hexNumber & 0x000000ff) / 255
-
-                            self.init(red: r, green: g, blue: b, alpha: a)
-                            return
-                        }
+            #if canImport(UIKit)
+            init(light: UIColor, dark: UIColor) {
+                #if os(watchOS)
+                // watchOS does not support light mode / dark mode
+                // Per Apple HIG, prefer dark-style interfaces
+                self.init(uiColor: dark)
+                #else
+                self.init(uiColor: UIColor { traitCollection in
+                    switch traitCollection.userInterfaceStyle {
+                    case .light, .unspecified:
+                        return light
+                    case .dark:
+                        return dark
+                    @unknown default:
+                        assertionFailure("Unknown userInterfaceStyle: \\(traitCollection.userInterfaceStyle)")
+                        return light
                     }
-                }
-                return nil
+                })
+                #endif
             }
+            #endif
 
-            convenience init(light: String, dark: String) {
-                self.init { traitCollection in
-                    if traitCollection.userInterfaceStyle == .dark {
-                        return UIColor(hex: dark) ?? UIColor(hex: light) ?? .clear
-                    } else {
-                        return UIColor(hex: light) ?? UIColor(hex: dark) ?? .clear
+            #if canImport(AppKit)
+            init(light: NSColor, dark: NSColor) {
+                self.init(nsColor: NSColor(name: nil) { appearance in
+                    switch appearance.name {
+                    case .aqua,
+                         .vibrantLight,
+                         .accessibilityHighContrastAqua,
+                         .accessibilityHighContrastVibrantLight:
+                        return light
+                    case .darkAqua,
+                         .vibrantDark,
+                         .accessibilityHighContrastDarkAqua,
+                         .accessibilityHighContrastVibrantDark:
+                        return dark
+                    default:
+                        assertionFailure("Unknown appearance: \\(appearance.name)")
+                        return light
                     }
                 }
             }
-
-            convenience init(any: String) {
-                self.init(hex: any) ?? .clear
-            }
+            #endif
         }
         """
         return code

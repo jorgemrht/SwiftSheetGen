@@ -86,6 +86,7 @@ public struct XcodeIntegration: Sendable {
     ) async throws {
         logger.info("Updating project.pbxproj at: \(pbxprojPath)")
         let content = try String(contentsOfFile: pbxprojPath, encoding: .utf8)
+        try validateProjectStructure(content)
         var updatedContent = content
         var newFileReferences: [String] = []
         var newBuildFileReferences: [String] = []
@@ -174,6 +175,7 @@ public struct XcodeIntegration: Sendable {
     ) async throws {
         logger.info("Updating project.pbxproj for Swift files at: \(pbxprojPath)")
         let content = try String(contentsOfFile: pbxprojPath, encoding: .utf8)
+        try validateProjectStructure(content)
         var updatedContent = content
         var newFileReferences: [String] = []
         var newBuildFileReferences: [String] = []
@@ -301,31 +303,63 @@ public struct XcodeIntegration: Sendable {
     }
     
     private static func findMainTargetUUID(in pbxproj: String) -> String? {
-        let projectTargetRegex = try! NSRegularExpression(pattern: #"targets = \(\s*([A-Z0-9]{24})"#, options: [])
-        guard let match = projectTargetRegex.firstMatch(in: pbxproj, options: [], range: NSRange(pbxproj.startIndex..., in: pbxproj)),
-              let targetRange = Range(match.range(at: 1), in: pbxproj) else { return nil }
-        return String(pbxproj[targetRange])
+        do {
+            let projectTargetRegex = try NSRegularExpression(pattern: #"targets = \(\s*([A-Z0-9]{24})"#, options: [])
+            guard let match = projectTargetRegex.firstMatch(in: pbxproj, options: [], range: NSRange(pbxproj.startIndex..., in: pbxproj)),
+                  match.numberOfRanges > 1,
+                  let targetRange = Range(match.range(at: 1), in: pbxproj) else {
+                logger.error("Could not find main target UUID in project")
+                return nil
+            }
+            return String(pbxproj[targetRange])
+        } catch {
+            logger.error("Regex compilation failed: \(error.localizedDescription)")
+            return nil
+        }
     }
 
     private static func findBuildPhaseUUID(in pbxproj: String, targetUUID: String, phaseName: String) -> String? {
-        let nativeTargetRegex = try! NSRegularExpression(pattern: #"\#(targetUUID) /\*.*\*/ = \{[^\}]*?buildPhases = \(([^\)]*)\);"#, options: [.dotMatchesLineSeparators])
-        guard let ntMatch = nativeTargetRegex.firstMatch(in: pbxproj, options: [], range: NSRange(pbxproj.startIndex..., in: pbxproj)),
-              let buildPhasesRange = Range(ntMatch.range(at: 2), in: pbxproj) else { return nil }
-        let buildPhases = pbxproj[buildPhasesRange]
-        let phaseRegex = try! NSRegularExpression(pattern: #"([A-Z0-9]{24}) /\* \#(phaseName) \*/"#)
-        if let sMatch = phaseRegex.firstMatch(in: String(buildPhases), options: [], range: NSRange(buildPhases.startIndex..., in: buildPhases)),
-           let phaseRange = Range(sMatch.range(at: 1), in: buildPhases) {
+        do {
+            let nativeTargetRegex = try NSRegularExpression(pattern: #"\#(targetUUID) /\*.*\*/ = \{[^\}]*?buildPhases = \(([^\)]*)\);"#, options: [.dotMatchesLineSeparators])
+            
+            guard let ntMatch = nativeTargetRegex.firstMatch(in: pbxproj, options: [], range: NSRange(pbxproj.startIndex..., in: pbxproj)),
+                  ntMatch.numberOfRanges > 1,
+                  let buildPhasesRange = Range(ntMatch.range(at: 1), in: pbxproj) else {
+                logger.warning("Could not find build phases for target: \(targetUUID)")
+                return nil
+            }
+            
+            let buildPhases = pbxproj[buildPhasesRange]
+            let phaseRegex = try NSRegularExpression(pattern: #"([A-Z0-9]{24}) /\* \#(phaseName) \*/"#)
+            
+            guard let sMatch = phaseRegex.firstMatch(in: String(buildPhases), options: [], range: NSRange(buildPhases.startIndex..., in: buildPhases)),
+                  sMatch.numberOfRanges > 1,
+                  let phaseRange = Range(sMatch.range(at: 1), in: buildPhases) else {
+                logger.warning("Could not find \(phaseName) build phase")
+                return nil
+            }
+            
             return String(buildPhases[phaseRange])
+        } catch {
+            logger.error("Regex compilation failed in findBuildPhaseUUID: \(error.localizedDescription)")
+            return nil
         }
-        return nil
     }
+
 
     private static func addToSpecificBuildPhase(_ content: String, buildUUID: String, phaseUUID: String, fileType: String) -> String {
         let pattern = #"(\#(phaseUUID) /\* \#(fileType) \*/ = \{[^\}]*?files = \([^\)]*)(\);)"#
-        let regex = try! NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators])
-        let replacement = "$1\n\t\t\t\t\(buildUUID) /* \(fileType) file */,$2"
-        return regex.stringByReplacingMatches(in: content, options: [], range: NSRange(content.startIndex..., in: content), withTemplate: replacement)
+        
+        do {
+            let regex = try NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators])
+            let replacement = "$1\n\t\t\t\t\(buildUUID) /* \(fileType) file */,$2"
+            return regex.stringByReplacingMatches(in: content, options: [], range: NSRange(content.startIndex..., in: content), withTemplate: replacement)
+        } catch {
+            logger.error("Regex compilation failed in addToSpecificBuildPhase: \(error.localizedDescription)")
+            return content  // Retornar contenido sin cambios si falla
+        }
     }
+
     
     private static func addToResourcesBuildPhase(_ content: String, buildUUID: String, fileName: String) -> String {
         let pattern = "(/* Resources \\*/ = \\{[\\s\\S]*?files = \\([\\s\\S]*?)(\\);)"
@@ -340,5 +374,37 @@ public struct XcodeIntegration: Sendable {
         }
 
         return content
+    }
+    
+    private static func validateProjectStructure(_ content: String) throws {
+        guard content.contains("// !$*UTF8*$!") else {
+            throw ProjectValidationError.invalidUTF8Header
+        }
+        
+        let requiredSections = [
+            "/* Begin PBXFileReference section */",
+            "/* Begin PBXBuildFile section */",
+            "/* Begin PBXNativeTarget section */"
+        ]
+        
+        for section in requiredSections {
+            guard content.contains(section) else {
+                throw ProjectValidationError.missingSection(section)
+            }
+        }
+    }
+
+    private enum ProjectValidationError: Error, LocalizedError {
+        case invalidUTF8Header
+        case missingSection(String)
+        
+        var errorDescription: String? {
+            switch self {
+            case .invalidUTF8Header:
+                return "Invalid project.pbxproj file: missing UTF8 header"
+            case .missingSection(let section):
+                return "Invalid project structure: missing \(section) section. The project.pbxproj file appears to be corrupted."
+            }
+        }
     }
 }

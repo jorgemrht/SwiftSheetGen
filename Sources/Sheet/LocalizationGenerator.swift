@@ -58,7 +58,7 @@ public struct LocalizationGenerator: Sendable {
             try await addGeneratedFilesToXcode(languages: languages)
         }
         
-        // 5. Cleanup Temporary Files
+        // 6. Cleanup Temporary Files
         if config.cleanupTemporaryFiles {
             try await cleanupTemporaryCSV(at: csvPath)
         }
@@ -273,8 +273,20 @@ public struct LocalizationGenerator: Sendable {
     // MARK: - Generated Files To Xcode
     
     private func addGeneratedFilesToXcode(languages: [String]) async throws {
-        Self.logger.info("Auto-adding generated files to Xcode project...")
         
+        if isTuistProject() {
+            Self.logger.info("🎯 Tuist project detected - skipping automatic Xcode integration")
+            Self.logger.info("📋 TUIST INSTRUCTIONS:")
+            Self.logger.info("1. Add the generated files to your Project.swift manifest")
+            Self.logger.info("2. Run 'tuist generate' to update your Xcode project")
+            Self.logger.info("📁 Generated files in: \(config.outputDirectory)/")
+            Self.logger.info("   • Colors.swift")
+            Self.logger.info("   • Color+Dynamic.swift")
+            return
+        }
+        
+        Self.logger.info("Auto-adding generated files to Xcode project...")
+
         guard let projectPath = try GeneratorHelper.findXcodeProjectPath(logger: Self.logger) else {
             Self.logger.error("No .xcodeproj found in current or parent directories")
             return
@@ -292,10 +304,61 @@ public struct LocalizationGenerator: Sendable {
         )
     }
 
+    // MARK: - Helper Functions
+
+    private func verifyXcodeIntegration(files: [String]) async throws {
+        Self.logger.info("Verifying integration with Xcode...")
+        
+        try await Task.sleep(nanoseconds: 1_000_000_000)
+        
+        Self.logger.info("Generated files:")
+        for file in files {
+            let fileName = URL(fileURLWithPath: file).lastPathComponent
+            Self.logger.info("  • \(fileName)")
+        }
+        
+        Self.logger.info("If the files do not appear in the Project Navigator:")
+        Self.logger.info("1. Close and reopen Xcode")
+        Self.logger.info("2. Clean up the project (⌘+Shift+K)")
+        Self.logger.info("3. Or manually drag files from Finder")
+    }
+
+    private func showManualInstructions() {
+        Self.logger.info("📋 MANUAL INSTRUCTIONS:")
+        Self.logger.info("1. Open your project in Xcode")
+        Self.logger.info("2. Drag the files from Finder to Project Navigator")
+        Self.logger.info("3. Select 'Add Files to [ProjectName]' when the dialog appears")
+        Self.logger.info("4. Make sure you select the correct target")
+        Self.logger.info("📁 Files generated in: \(config.outputDirectory)/")
+        Self.logger.info("   • Colors.swift")
+        Self.logger.info("   • Color+Dynamic.swift")
+    }
+
     // MARK: - Cleanup Temporary CSV
     
     private func cleanupTemporaryCSV(at csvPath: String) async throws {
         try await GeneratorHelper.cleanupTemporaryFile(at: csvPath, logger: Self.logger)
+    }
+    
+    // MARK: - Detect Tuist Project
+
+    private func isTuistProject() -> Bool {
+        let tuistFiles = [
+            "Project.swift",
+            "Workspace.swift",
+            "Tuist/Project.swift",
+            "Tuist/Workspace.swift",
+            ".tuist-version"
+        ]
+        
+        for file in tuistFiles {
+            if FileManager.default.fileExists(atPath: file) {
+                Self.logger.info("Detected Tuist project file: \(file)")
+                return true
+            }
+        }
+        
+        return false
     }
 }
 

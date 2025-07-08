@@ -208,9 +208,7 @@ public struct XcodeIntegration: Sendable {
                 hasChanges = true
             } else if forceUpdateExisting {
                 logger.info("Swift file already exists in project: \(fileName). Ensuring it's in Sources build phase.")
-                // Logic to ensure it's in the Sources build phase if forceUpdateExisting is true
-                // This part might need more sophisticated logic depending on exact requirements
-                hasChanges = true // Assume change for now if we are forcing update
+                hasChanges = true
             }
         }
 

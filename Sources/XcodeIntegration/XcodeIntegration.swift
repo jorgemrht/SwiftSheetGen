@@ -378,16 +378,29 @@ public struct XcodeIntegration: Sendable {
         guard content.contains("// !$*UTF8*$!") else {
             throw ProjectValidationError.invalidUTF8Header
         }
+
+        let isModernFormat = content.contains("objectVersion = 77")
         
         let requiredSections = [
             "/* Begin PBXFileReference section */",
-            "/* Begin PBXBuildFile section */",
             "/* Begin PBXNativeTarget section */"
+        ]
+        
+        let traditionalSections = [
+            "/* Begin PBXBuildFile section */"
         ]
         
         for section in requiredSections {
             guard content.contains(section) else {
                 throw ProjectValidationError.missingSection(section)
+            }
+        }
+
+        if !isModernFormat {
+            for section in traditionalSections {
+                guard content.contains(section) else {
+                    throw ProjectValidationError.missingSection(section)
+                }
             }
         }
     }

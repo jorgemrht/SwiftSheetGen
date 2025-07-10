@@ -380,7 +380,6 @@ public struct XcodeIntegration: Sendable {
         }
 
         let isModernFormat = content.contains("objectVersion = 77")
-        
         let requiredSections = [
             "/* Begin PBXFileReference section */",
             "/* Begin PBXNativeTarget section */"

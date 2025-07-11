@@ -5,6 +5,7 @@ import Foundation
 public enum SheetLocalizerError: Error, LocalizedError, Sendable {
     
     case invalidURL(String)
+    case invalidGoogleSheetsURL(url: String)
     case networkError(String)
     case csvParsingError(String)
     case fileSystemError(String)
@@ -16,6 +17,8 @@ public enum SheetLocalizerError: Error, LocalizedError, Sendable {
         switch self {
         case .invalidURL(let url):
             "URL inválida: \(url)"
+        case .invalidGoogleSheetsURL(let url):
+            "The provided URL is not a valid Google Sheets URL: \(url)"
         case .networkError(let message):
             "Network error: \(message)"
         case .csvParsingError(let message):

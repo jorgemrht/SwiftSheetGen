@@ -8,11 +8,11 @@ public struct GoogleSheetURLTransformer: Sendable {
   
     private static let logger = Logger.googleSheetURLTransformer
 
-    public static func transformToCSV(_ urlString: String) -> String {
+    public static func transformToCSV(_ urlString: String) throws -> String {
         
-        guard !urlString.isEmptyOrWhitespace else {
-            logger.error("Empty URL string provided")
-            return urlString
+        guard urlString.isGoogleSheetsURL else {
+            logger.error("Provided string is not a valid Google Sheets URL: \(urlString)")
+            throw SheetLocalizerError.invalidGoogleSheetsURL(url: urlString)
         }
         
         let trimmedURL = urlString.trimmedContent

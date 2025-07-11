@@ -71,8 +71,7 @@ let package = Package(
                 "SheetLocalizer",
                 "CoreExtensions",
                 "XcodeIntegration"
-            ],
-            path: "Tests/SheetLocalizer"
+            ]
         )
     ]
 )

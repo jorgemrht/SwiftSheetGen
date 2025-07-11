@@ -32,7 +32,8 @@ public actor CSVDownloader {
     public func download(from urlString: String, to outputPath: String) async throws {
         try await validateInputs(urlString: urlString, outputPath: outputPath)
         
-        let transformedURL = GoogleSheetURLTransformer.transformToCSV(urlString.trimmedContent)
+        let transformedURL = try GoogleSheetURLTransformer.transformToCSV(urlString.trimmedContent)
+        
         guard let url = URL(string: transformedURL) else {
             Self.logger.error("Invalid URL: \(transformedURL)")
             throw SheetLocalizerError.invalidURL(transformedURL)
@@ -149,26 +150,27 @@ public actor CSVDownloader {
             return false
         }
         
-        let transformedURL = GoogleSheetURLTransformer.transformToCSV(urlString.trimmedContent)
-        guard let url = URL(string: transformedURL) else {
-            return false
-        }
-        
-        do {
-            let config = URLSessionConfiguration.default
-            config.timeoutIntervalForRequest = 10.0
-            let validationSession = URLSession(configuration: config)
-            defer { validationSession.invalidateAndCancel() }
-            
-            var request = URLRequest(url: url)
-            request.httpMethod = "HEAD"
-            let (_, response) = try await validationSession.data(for: request)
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                return 200...299 ~= httpResponse.statusCode
-            }
-            
-            return false
+            do {
+                let transformedURL = try GoogleSheetURLTransformer.transformToCSV(urlString.trimmedContent)
+                
+                guard let url = URL(string: transformedURL) else {
+                    return false
+                }
+                
+                let config = URLSessionConfiguration.default
+                config.timeoutIntervalForRequest = 10.0
+                let validationSession = URLSession(configuration: config)
+                defer { validationSession.invalidateAndCancel() }
+                
+                var request = URLRequest(url: url)
+                request.httpMethod = "HEAD"
+                let (_, response) = try await validationSession.data(for: request)
+                
+                if let httpResponse = response as? HTTPURLResponse {
+                    return 200...299 ~= httpResponse.statusCode
+                }
+                
+                return false
         } catch {
             return false
         }

@@ -21,11 +21,19 @@ struct CoreExtensionsTests {
         #expect("".isGoogleSheetsURL == false)
     }
 
-    @Test("String.googleSheetsDocumentID")
+    @Test("String.googleSheetsDocumentID with edge cases")
     func test_googleSheetsDocumentID() {
-        let url = "https://docs.google.com/spreadsheets/d/1a2b3c4d-5e6f/edit#gid=0"
-        #expect(url.googleSheetsDocumentID == "1a2b3c4d-5e6f")
-        #expect("https://google.com".googleSheetsDocumentID == nil)
+        let standardURL = "https://docs.google.com/spreadsheets/d/1a2b3c4d-5e6f/edit#gid=0"
+        #expect(standardURL.googleSheetsDocumentID == "1a2b3c4d-5e6f")
+        
+        let exportURL = "https://docs.google.com/spreadsheets/d/1a2b3c4d-5e6f/export?format=csv"
+        #expect(exportURL.googleSheetsDocumentID == "1a2b3c4d-5e6f")
+
+        let noIDURL = "https://docs.google.com/spreadsheets/d/"
+        #expect(noIDURL.googleSheetsDocumentID == nil)
+
+        let invalidURL = "https://google.com"
+        #expect(invalidURL.googleSheetsDocumentID == nil)
     }
 
     @Test("String.csvEscaped")
@@ -36,14 +44,30 @@ struct CoreExtensionsTests {
         #expect("hello\nworld".csvEscaped == "\"hello\nworld\"")
     }
 
-    @Test("String.isValidLocalizationKey")
+    @Test("String.isValidLocalizationKey with edge cases")
     func test_isValidLocalizationKey() {
+        // Valid cases
         #expect("valid.key_1".isValidLocalizationKey == true)
+        #expect("common_button_title".isValidLocalizationKey == true)
+        #expect("a".isValidLocalizationKey == true)
+
+        // Invalid cases
         #expect("".isValidLocalizationKey == false)
         #expect(" key".isValidLocalizationKey == false)
         #expect("key ".isValidLocalizationKey == false)
         #expect("key\"".isValidLocalizationKey == false)
         #expect("key\n".isValidLocalizationKey == false)
+        #expect("key with space".isValidLocalizationKey == true) // This might be unexpected, let's check the implementation. Ah, it only checks for prefix/suffix space.
+    }
+
+    @Test("String.invalidLocalizationKeyReason")
+    func test_invalidLocalizationKeyReason() {
+        #expect("valid_key".invalidLocalizationKeyReason == nil)
+        #expect("".invalidLocalizationKeyReason == "Key is empty")
+        #expect(" key".invalidLocalizationKeyReason == "Key starts with a space")
+        #expect("key ".invalidLocalizationKeyReason == "Key ends with a space")
+        #expect("key\"".invalidLocalizationKeyReason == "Key contains a double quote (\")")
+        #expect("key\n".invalidLocalizationKeyReason == "Key contains a newline")
     }
 
     // MARK: - Array Extension Tests

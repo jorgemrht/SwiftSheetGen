@@ -27,6 +27,135 @@ public struct ColorDynamicFileGenerator: Sendable {
         #if canImport(UIKit)
         import UIKit
         #endif
+        
+        extension Color {
+            init(any color: Color) {
+                #if canImport(UIKit)
+                self.init(uiColor: UIColor(color))
+                #else
+                self.init(nsColor: NSColor(color))
+                #endif
+            }
+            
+            #if canImport(UIKit)
+            init(any color: UIColor) {
+                self.init(uiColor: color)
+            }
+            #endif
+            
+            #if canImport(AppKit)
+            init(any color: NSColor) {
+                self.init(nsColor: color)
+            }
+            #endif
+        }  
+          
+        extension Color {
+            init(any: Color, dark: Color) {
+                #if canImport(UIKit)
+                self.init(any: UIColor(any), dark: UIColor(dark))
+                #else
+                self.init(any: NSColor(any), dark: NSColor(dark))
+                #endif
+            }
+        
+            #if canImport(UIKit)
+            init(any: UIColor, dark: UIColor) {
+                #if os(watchOS)
+                self.init(uiColor: dark)
+                #else
+                self.init(uiColor: UIColor { traits in
+                    switch traits.userInterfaceStyle {
+                    case .light, .unspecified:
+                        return any
+                    case .dark:
+                        return dark
+                    @unknown default:
+                        assertionFailure("Unknown userInterfaceStyle: \\(traits.userInterfaceStyle)")
+                        return any
+                    }
+                })
+                #endif
+            }
+            #endif
+            
+            #if canImport(AppKit)
+            init(any: NSColor, dark: NSColor) {
+                self.init(nsColor: NSColor(name: nil) { appearance in
+                    switch appearance.name {
+                    case .aqua,
+                         .vibrantLight,
+                         .accessibilityHighContrastAqua,
+                         .accessibilityHighContrastVibrantLight:
+                        return any
+                    case .darkAqua,
+                         .vibrantDark,
+                         .accessibilityHighContrastDarkAqua,
+                         .accessibilityHighContrastVibrantDark:
+                        return dark
+                    default:
+                        assertionFailure("Unknown appearance: \\(appearance.name)")
+                        return any
+                    }
+                })
+            }
+            #endif
+        }
+        
+        
+        extension Color {
+            init(any: Color, light: Color, dark: Color) {
+                #if canImport(UIKit)
+                self.init(any: UIColor(any), light: UIColor(light), dark: UIColor(dark))
+                #else
+                self.init(any: NSColor(any), light: NSColor(light), dark: NSColor(dark))
+                #endif
+            }
+        
+            #if canImport(UIKit)
+            init(any: UIColor, light: UIColor, dark: UIColor) {
+                #if os(watchOS)
+                self.init(uiColor: dark)
+                #else
+                self.init(uiColor: UIColor { traits in
+                    switch traits.userInterfaceStyle {
+                    case .light:
+                        return light
+                    case .dark:
+                        return dark
+                    case .unspecified:
+                        return any
+                    @unknown default:
+                        assertionFailure("Unknown userInterfaceStyle: \\(traits.userInterfaceStyle)")
+                        return any
+                    }
+                })
+                #endif
+            }
+            #endif
+            
+            #if canImport(AppKit)
+            init(any: NSColor, light: NSColor, dark: NSColor) {
+                self.init(nsColor: NSColor(name: nil) { appearance in
+                    switch appearance.name {
+                    case .aqua,
+                         .vibrantLight,
+                         .accessibilityHighContrastAqua,
+                         .accessibilityHighContrastVibrantLight:
+                        return light
+                    case .darkAqua,
+                         .vibrantDark,
+                         .accessibilityHighContrastDarkAqua,
+                         .accessibilityHighContrastVibrantDark:
+                        return dark
+                    default:
+                        assertionFailure("Unknown appearance: \\(appearance.name)")
+                        return any
+                    }
+                })
+            }
+            #endif
+        }           
 
         extension Color {
             init(light: Color, dark: Color) {
@@ -40,18 +169,16 @@ public struct ColorDynamicFileGenerator: Sendable {
             #if canImport(UIKit)
             init(light: UIColor, dark: UIColor) {
                 #if os(watchOS)
-                // watchOS does not support light mode / dark mode
-                // Per Apple HIG, prefer dark-style interfaces
                 self.init(uiColor: dark)
                 #else
-                self.init(uiColor: UIColor { traitCollection in
-                    switch traitCollection.userInterfaceStyle {
+                self.init(uiColor: UIColor { traits in
+                    switch traits.userInterfaceStyle {
                     case .light, .unspecified:
                         return light
                     case .dark:
                         return dark
                     @unknown default:
-                        assertionFailure("Unknown userInterfaceStyle: \\(traitCollection.userInterfaceStyle)")
+                        assertionFailure("Unknown userInterfaceStyle: \\(traits.userInterfaceStyle)")
                         return light
                     }
                 })
@@ -77,7 +204,7 @@ public struct ColorDynamicFileGenerator: Sendable {
                         assertionFailure("Unknown appearance: \\(appearance.name)")
                         return light
                     }
-                }
+                })
             }
             #endif
         }

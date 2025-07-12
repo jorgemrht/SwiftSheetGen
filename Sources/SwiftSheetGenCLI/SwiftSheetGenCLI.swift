@@ -60,9 +60,7 @@ public struct LocalizationCommand: AsyncParsableCommand, SheetGenCommand {
             enumName: swiftEnumName,
             sourceDirectory: enumSeparateFromLocalizations ? trimmedBaseDirectory : outputDirectory,
             csvFileName: "generated_localizations.csv",
-            autoAddToXcode: !sharedOptions.skipXcode,
             cleanupTemporaryFiles: !sharedOptions.keepCSV,
-            forceUpdateExistingXcodeFiles: sharedOptions.forceUpdate,
             unifiedLocalizationDirectory: !enumSeparateFromLocalizations
         )
     }
@@ -100,9 +98,7 @@ public struct ColorsCommand: AsyncParsableCommand, SheetGenCommand {
         return ColorConfig.custom(
             outputDirectory: outputDirectory,
             csvFileName: "generated_colors.csv",
-            autoAddToXcode: !sharedOptions.skipXcode,
-            cleanupTemporaryFiles: !sharedOptions.keepCSV,
-            forceUpdateExistingXcodeFiles: sharedOptions.forceUpdate
+            cleanupTemporaryFiles: !sharedOptions.keepCSV
         )
     }
 
@@ -124,7 +120,6 @@ extension LocalizationCommand {
         Self.logger.debug("  📄 Temporary CSV File Path: \(temporaryCSVFilePath)")
         Self.logger.debug("  📱 Xcode Project Integration: \(!sharedOptions.skipXcode)")
         Self.logger.debug("  📂 Enum Separate from Localizations: \(enumSeparateFromLocalizations)")
-        Self.logger.debug("  🔄 Force Update Existing Files: \(sharedOptions.forceUpdate)")
         Self.logger.debug("  💾 Preserve Temporary CSV: \(sharedOptions.keepCSV)")
         Self.logger.debug("  🎯 Unified Localization Directory: \(!enumSeparateFromLocalizations)")
     }
@@ -141,7 +136,6 @@ extension ColorsCommand {
         Self.logger.debug("  📂 Colors Output Directory: \(config.outputDirectory)")
         Self.logger.debug("  📄 Temporary CSV File Path: \(temporaryCSVFilePath)")
         Self.logger.debug("  📱 Xcode Project Integration: \(!sharedOptions.skipXcode)")
-        Self.logger.debug("  🔄 Force Update Existing Files: \(sharedOptions.forceUpdate)")
         Self.logger.debug("  💾 Preserve Temporary CSV: \(sharedOptions.keepCSV)")
     }
 }

@@ -34,7 +34,6 @@ struct LocalizationGeneratorIntegrationTests {
             enumName: "L10nTest",
             sourceDirectory: tempDir.path,
             csvFileName: "test.csv",
-            autoAddToXcode: false,
             cleanupTemporaryFiles: false
         )
         
@@ -87,7 +86,6 @@ struct LocalizationGeneratorIntegrationTests {
             enumName: "L10nTest",
             sourceDirectory: tempDir.path,
             csvFileName: "test.csv",
-            autoAddToXcode: false,
             cleanupTemporaryFiles: false
         )
         let generator = LocalizationGenerator(config: config)
@@ -116,7 +114,6 @@ struct LocalizationGeneratorIntegrationTests {
             enumName: "L10nTest",
             sourceDirectory: tempDir.path,
             csvFileName: "test.csv",
-            autoAddToXcode: false,
             cleanupTemporaryFiles: false
         )
         let generator = LocalizationGenerator(config: config)

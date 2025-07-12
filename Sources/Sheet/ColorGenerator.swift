@@ -47,9 +47,7 @@ public struct ColorGenerator:  Sendable {
         try await generateColorDynamicFile()
 
         // 5. Add generated files to Xcode (if configured)
-        if config.autoAddToXcode {
-            try await addGeneratedFilesToXcode()
-        }
+        try await addGeneratedFilesToXcode()
         
         // 6. Cleanup Temporary Files
         if config.cleanupTemporaryFiles {
@@ -223,8 +221,7 @@ public struct ColorGenerator:  Sendable {
             
             try await XcodeIntegration.addSwiftFiles(
                 projectPath: projectPath,
-                files: [colorsFile, colorDynamicFile],
-                forceUpdateExisting: config.forceUpdateExistingXcodeFiles
+                files: [colorsFile, colorDynamicFile]
             )
             
             try await verifyXcodeIntegration(files: [colorsFile, colorDynamicFile])

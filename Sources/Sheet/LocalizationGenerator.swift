@@ -54,9 +54,7 @@ public struct LocalizationGenerator: Sendable {
         try await generateSwiftEnum(allKeys: allKeys)
         
         // 5. Add generated files to Xcode (if configured)
-        if config.autoAddToXcode {
-            try await addGeneratedFilesToXcode(languages: languages)
-        }
+        try await addGeneratedFilesToXcode(languages: languages)
         
         // 6. Cleanup Temporary Files
         if config.cleanupTemporaryFiles {
@@ -299,8 +297,7 @@ public struct LocalizationGenerator: Sendable {
             projectPath: projectPath,
             generatedFiles: localizationFiles,
             languages: languages,
-            enumFile: enumFile,
-            forceUpdateExisting: config.forceUpdateExistingXcodeFiles
+            enumFile: enumFile
         )
     }
 

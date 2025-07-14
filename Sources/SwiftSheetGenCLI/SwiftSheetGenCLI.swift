@@ -118,7 +118,6 @@ extension LocalizationCommand {
         Self.logger.debug("  📁 Base Output Directory: \(sharedOptions.outputDir)")
         Self.logger.debug("  📂 Localization Output Directory: \(config.outputDirectory)")
         Self.logger.debug("  📄 Temporary CSV File Path: \(temporaryCSVFilePath)")
-        Self.logger.debug("  📱 Xcode Project Integration: \(!sharedOptions.skipXcode)")
         Self.logger.debug("  📂 Enum Separate from Localizations: \(enumSeparateFromLocalizations)")
         Self.logger.debug("  💾 Preserve Temporary CSV: \(sharedOptions.keepCSV)")
         Self.logger.debug("  🎯 Unified Localization Directory: \(!enumSeparateFromLocalizations)")
@@ -135,7 +134,6 @@ extension ColorsCommand {
         Self.logger.debug("  📁 Base Output Directory: \(sharedOptions.outputDir)")
         Self.logger.debug("  📂 Colors Output Directory: \(config.outputDirectory)")
         Self.logger.debug("  📄 Temporary CSV File Path: \(temporaryCSVFilePath)")
-        Self.logger.debug("  📱 Xcode Project Integration: \(!sharedOptions.skipXcode)")
         Self.logger.debug("  💾 Preserve Temporary CSV: \(sharedOptions.keepCSV)")
     }
 }

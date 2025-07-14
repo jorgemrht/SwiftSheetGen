@@ -38,8 +38,6 @@ extension AsyncParsableCommand {
     func logSuccessfulExecutionCompletion(
         startTime: Date,
         generatedFilesLocation: String,
-        skipXcode: Bool,
-        forceUpdate: Bool,
         logPrivacyLevel: String
     ) {
         let executionDuration = Date().timeIntervalSince(startTime)
@@ -50,13 +48,6 @@ extension AsyncParsableCommand {
         
         logger.logInfo("📍 Generated files location:", value: generatedFilesLocation, isPrivate: LogPrivacyLevel(from: logPrivacyLevel).isPrivate)
 
-        if !skipXcode {
-            logger.log("📱 Files have been integrated into your Xcode project")
-            if forceUpdate {
-                logger.log("🔄 Existing files were updated in Xcode project")
-            }
-        }
-        
         logger.log("🚀 Your Swift project is now ready with generated files!")
     }
 }

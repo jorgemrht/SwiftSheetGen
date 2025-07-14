@@ -10,14 +10,8 @@ public struct SharedOptions: ParsableArguments {
     @Flag(name: [.customShort("v"), .long], help: "📝 Enable detailed logging for debugging")
     public var verbose: Bool = false
 
-    @Flag(name: .long, help: "⏭️ Skip automatic integration of generated files into Xcode project")
-    public var skipXcode: Bool = false
-
     @Flag(name: .long, help: "💾 Keep downloaded CSV file for debugging")
     public var keepCSV: Bool = false
-
-    @Flag(name: .long, help: "🔄 Update existing files in Xcode")
-    public var forceUpdate: Bool = false
 
     @Option(name: .long, help: "Privacy level for log output: public (default) or private")
     public var logPrivacyLevel: String = "public"

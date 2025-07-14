@@ -51,8 +51,6 @@ extension SheetGenCommand {
             logSuccessfulExecutionCompletion(
                 startTime: executionStartTime,
                 generatedFilesLocation: outputDirectory,
-                skipXcode: sharedOptions.skipXcode,
-                forceUpdate: sharedOptions.forceUpdate,
                 logPrivacyLevel: sharedOptions.logPrivacyLevel
             )
         } catch {
@@ -117,10 +115,6 @@ extension SheetGenCommand {
         
         try await generator.generate(from: temporaryCSVFilePath)
         Self.logger.log("✅ Swift \(commandName) files generated successfully")
-        
-        if !sharedOptions.skipXcode {
-            Self.logger.log("📱 \(commandName.capitalized) files integrated into Xcode project")
-        }
     }
 
     func temporaryFileCleanupIfRequested() throws {

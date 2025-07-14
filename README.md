@@ -16,16 +16,23 @@
 
 ---
 
-**SwiftSheetGen** is a command-line tool that automates the generation of Swift assets. It transforms your team's collaborative Google Sheets for strings and colors into compile-time safe code, eliminating manual errors and keeping your Xcode project in perfect sync.
+**SwiftSheetGen** is a command-line tool that transforms your team's collaborative Google Sheets for strings and colors into compile-time safe Swift code, eliminating manual errors and keeping your Xcode project in perfect sync.
 
-## Features
+## Why SwiftSheetGen?
 
-- ✅ **Type-Safe Code**: Generates Swift enums for localizations (`L10n`) and extensions for `Color`, preventing typos and runtime errors.
-- ✅ **Google Sheets as a CMS**: Use a single Google Sheet as a source of truth for designers, translators, and developers.
-- ✅ **Automated Workflow**: Downloads and processes sheets in real-time, generating files directly into your project.
-- ✅ **Xcode Integration**: Automatically adds the generated files to your Xcode project structure.
-- ✅ **Modern & Native**: Built with Swift 6, leveraging modern concurrency. No external dependencies like Ruby required.
-- ✅ **Dual Asset Support**: Manages both localizable strings and design system colors from the same tool.
+Stop manually managing `.strings` files and defining colors in code. SwiftSheetGen offers a better way:
+
+-   ✅ **Single Source of Truth**: Use a Google Sheet as a collaborative CMS for designers, translators, and developers. No more conflicts or outdated values.
+-   ✅ **Type-Safe & Autocomplete**: Generates Swift enums (`L10n`) and `Color` extensions, turning runtime errors into compile-time errors and enabling autocomplete in Xcode.
+-   ✅ **Automated & Fast**: Built natively in Swift, it runs fast and integrates seamlessly into your build process without external dependencies like Ruby.
+-   ✅ **Eliminate Manual Work**: Forget copying keys, running scripts, or dragging files into Xcode. SwiftSheetGen handles it all.
+
+## How It Works
+
+The tool follows a simple three-step process:
+1.  **Download**: It fetches the latest version of your Google Sheet and parses it as a CSV.
+2.  **Generate**: It transforms the rows into type-safe Swift code (`.swift` and `.strings` files).
+3.  **Integrate**: It automatically adds or updates the generated files in your Xcode project, ready to be used.
 
 ## Installation
 
@@ -34,39 +41,22 @@ You can install SwiftSheetGen using the Swift Package Manager.
 #### As a CLI Tool (Recommended)
 
 Build the tool from the source and move it to a location in your `PATH`.
-
 ```bash
 git clone https://github.com/jorge/SwiftSheetGen.git
 cd SwiftSheetGen
 swift build -c release
 sudo cp .build/release/swiftsheetgen /usr/local/bin/
 ```
-
-Verify the installation by running:
-```bash
-swiftsheetgen --version
-```
+Verify the installation by running `swiftsheetgen --version`.
 
 #### As a Package Dependency
 
 Add `SwiftSheetGen` as a dependency to your `Package.swift` file to use its core libraries.
-
 ```swift
 dependencies: [
     .package(url: "https://github.com/jorge/SwiftSheetGen.git", from: "1.0.0")
 ]
 ```
-
-## Xcode Integration
-
-SwiftSheetGen can automatically integrate the generated files into your Xcode project.
-
-- **Compatibility:** This feature is fully compatible with **Xcode 15 and newer**.
-- **Older Xcode Versions:** On older versions, if the generated files do not appear in the Project Navigator automatically, you may need to **drag and drop them manually from Finder** for the initial setup. Subsequent runs should then update the files in place.
-
-For the integration to work, the directory you specify in the `--output-dir` option **must be the one that contains your `.xcodeproj` file**.
-
-You can use the `--skip-xcode` flag to disable this feature entirely.
 
 ## Usage
 
@@ -74,19 +64,19 @@ You can use the `--skip-xcode` flag to disable this feature entirely.
 
 To generate localizables, all you need to run is:
 ```bash
-swiftsheetgen localizables ""
+swiftsheetgen localization ""
 ```
-This command downloads the sheet, processes it for localizations, and saves the generated `.strings` and Swift files into a new `./Localizables` directory.
+This command saves the generated `.strings` and Swift files into a new `./Localizables` directory.
 
 To generate colors, the command is:
 ```bash
 swiftsheetgen colors ""
 ```
-This command downloads the sheet, processes it for colors, and saves the generated Swift files into a new `./Colors` directory.
+This command saves the generated Swift files into a new `./Colors` directory.
 
 ### Command Options
 
-#### Shared Options (for `localizables` and `colors`)
+#### Shared Options (for `localization` and `colors`)
 
 | Option | Shorthand | Description | Default |
 |---|---|---|---|
@@ -95,7 +85,7 @@ This command downloads the sheet, processes it for colors, and saves the generat
 | `--keep-csv` | | Keep the downloaded CSV file for debugging purposes. | `false` |
 | `--log-privacy-level` | | Set log privacy to `public` or `private`. | `public` |
 
-#### `localizables` Specific Options
+#### `localization` Specific Options
 
 | Option | Description | Default |
 |---|---|---|
@@ -104,25 +94,32 @@ This command downloads the sheet, processes it for colors, and saves the generat
 
 The `colors` command does not have any specific options beyond the shared ones.
 
-## Configuration
+## Integrations
 
-### Google Sheet Format
+### Xcode
+SwiftSheetGen automatically integrates the generated files into your Xcode project.
+
+- **Compatibility:** This feature is fully compatible with **Xcode 15 and newer**.
+- **Older Xcode Versions:** On older versions, if files do not appear automatically, you may need to **drag and drop them manually from Finder** for the initial setup.
+
+For the integration to work, the directory you specify in `--output-dir` **must be the one that contains your `.xcodeproj` file**. The integration is automatic and cannot be disabled with a flag.
+
+### Tuist
+If a `Project.swift` or `Workspace.swift` file is detected in your project's root, SwiftSheetGen will skip the automatic Xcode integration and print instructions for you to add the generated files to your Tuist manifest.
+
+## Google Sheet Setup
 
 Your Google Sheet must have a specific structure for SwiftSheetGen to parse it correctly.
 
 #### For Localizations
-
 The sheet should contain columns for keys, comments, and each language.
-
 | key | comment | en | es |
 |---|---|---|---|
 | `login.title` | Title on the login screen | Welcome! | ¡Bienvenido! |
 | `login.button.signIn` | Sign in button text | Sign In | Iniciar Sesión |
 
 #### For Colors
-
 The sheet for colors requires a name and hex values for light, dark, or any appearance.
-
 | name | anyHex | lightHex | darkHex |
 |---|---|---|---|
 | `primary` | | `#68478E` | `#866CA5` |
@@ -131,24 +128,14 @@ The sheet for colors requires a name and hex values for light, dark, or any appe
 
 ## Generated Code Examples
 
-#### Localizations (`Strings.swift`)
-
+#### Localizations (`L10n.swift`)
 ```swift
 // Auto-generated by SwiftSheetGen
 import Foundation
 
 public enum L10n: String, CaseIterable, Sendable {
-    case commonAppNamePreText = "common_app_name_pre_text"
-    case commonAppNameText = "common_app_name_text"
-    case commonLanguageCodeText = "common_language_code_text"
-    case loginForgotPasswordButton = "login_forgot_password_button"
-    case loginPasswordText = "login_password_text"
-    case loginSendButton = "login_send_button"
-    case loginSignUpButton = "login_sign_up_button"
-    case loginSignUpText = "login_sign_up_text"
-    case loginTitleText = "login_title_text"
-    case loginUsernameText = "login_username_text"
-    case profileVersionText = "profile_version_text"
+    case loginTitle = "login_title"
+    case loginButtonSignIn = "login_button_signIn"
 
     /// Returns the localized string for this key
     public var localized: String {
@@ -159,41 +146,21 @@ public enum L10n: String, CaseIterable, Sendable {
     public func localized(_ args: CVarArg...) -> String {
         String(format: localized, arguments: args)
     }
-    
-    /// Returns localized string with specific bundle
-    public func localized(bundle: Bundle) -> String {
-        NSLocalizedString(self.rawValue, bundle: bundle, comment: "")
-    }
-    
-    /// SwiftUI compatible computed property
-    @available(iOS 13.0, macOS 10.15, *)
-    public var localizedString: LocalizedStringKey {
-        LocalizedStringKey(self.rawValue)
-    }
 }
 ```
 
 #### Colors (`Colors.swift`)
-
 ```swift
 // Auto-generated by SwiftSheetGen
 import SwiftUI
 
 public extension ShapeStyle where Self == Color {
-    /// primaryBackgroundColor
-    static var primaryBackgroundColor: Color { .init(light: .init(hex: 0xFFF), dark: .init(hex: 0xFFF)) }
-    /// secondaryBackgroundColor
-    static var secondaryBackgroundColor: Color { .init(light: .init(hex: 0xFFF), dark: .init(hex: 0xFFF)) }
-    /// tertiaryBackgroundColor
-    static var tertiaryBackgroundColor: Color { .init(light: .init(hex: 0xFFF), dark: .init(hex: 0xFFF)) }
-    /// primaryTextColor
-    static var primaryTextColor: Color { .init(light: .init(hex: 0xFFF), dark: .init(hex: 0xFFF)) }
-    /// secondaryTextColor
-    static var secondaryTextColor: Color { .init(light: .init(hex: 0xFFF), dark: .init(hex: 0xFFF)) }
-    /// tertiaryTextColor
-    static var tertiaryTextColor: Color { .init(light: .init(hex: 0xFFF), dark: .init(hex: 0xFFF)) }
-    /// placeholderTextColor
-    static var placeholderTextColor: Color { .init(light: .init(hex: 0xFFF), dark: .init(hex: 0xFFF)) }
+    /// primary
+    static var primary: Color { .init(light: .init(hex: 0x68478E), dark: .init(hex: 0x866CA5)) }
+    /// onPrimary
+    static var onPrimary: Color { .init(light: .init(hex: 0xFFFFFF), dark: .init(hex: 0x00172E)) }
+    /// background
+    static var background: Color { .init(hex: 0xF2F2F7) }
 }
 
 // ... plus extensions for dynamic colors and a SwiftUI preview
@@ -202,3 +169,4 @@ public extension ShapeStyle where Self == Color {
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+

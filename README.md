@@ -57,25 +57,52 @@ dependencies: [
 ]
 ```
 
+## Xcode Integration
+
+SwiftSheetGen can automatically integrate the generated files into your Xcode project.
+
+- **Compatibility:** This feature is fully compatible with **Xcode 15 and newer**.
+- **Older Xcode Versions:** On older versions, if the generated files do not appear in the Project Navigator automatically, you may need to **drag and drop them manually from Finder** for the initial setup. Subsequent runs should then update the files in place.
+
+For the integration to work, the directory you specify in the `--output-dir` option **must be the one that contains your `.xcodeproj` file**.
+
+You can use the `--skip-xcode` flag to disable this feature entirely.
+
 ## Usage
 
-SwiftSheetGen is run from the command line. You can generate assets for localizations and colors separately.
+### Basic Commands
 
-#### Generating Localizations
-
+To generate localizables, all you need to run is:
 ```bash
-swiftsheetgen localizables \
-  --url "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/export?format=csv" \
-  --output "path/to/your/project/Sources/Generated/"
+swiftsheetgen localizables ""
 ```
+This command downloads the sheet, processes it for localizations, and saves the generated `.strings` and Swift files into a new `./Localizables` directory.
 
-#### Generating Colors
-
+To generate colors, the command is:
 ```bash
-swiftsheetgen colors \
-  --url "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/export?format=csv&gid=YOUR_GID" \
-  --output "path/to/your/project/Sources/Generated/"
+swiftsheetgen colors ""
 ```
+This command downloads the sheet, processes it for colors, and saves the generated Swift files into a new `./Colors` directory.
+
+### Command Options
+
+#### Shared Options (for `localizables` and `colors`)
+
+| Option | Shorthand | Description | Default |
+|---|---|---|---|
+| `--output-dir` | | The directory where generated files will be saved. For Xcode integration, this must be the directory containing your `.xcodeproj` file. | `./` |
+| `--verbose` | `-v` | Enable detailed logging for debugging. | `false` |
+| `--keep-csv` | | Keep the downloaded CSV file for debugging purposes. | `false` |
+| `--log-privacy-level` | | Set log privacy to `public` or `private`. | `public` |
+
+#### `localizables` Specific Options
+
+| Option | Description | Default |
+|---|---|---|
+| `--swift-enum-name` | Name for the generated Swift localization enum. | `L10n` |
+| `--enum-separate-from-localizations` | Generate the Swift enum file in the base output directory instead of inside the `Localizables` subdirectory. | `false` |
+
+The `colors` command does not have any specific options beyond the shared ones.
 
 ## Configuration
 

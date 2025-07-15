@@ -6,8 +6,12 @@ import os.log
 
 // MARK: - Main CLI Command
 @main
-
 public struct SwiftSheetGenCLI: AsyncParsableCommand {
+    
+    private static let version = "0.0.6"
+
+    @Flag(name: .long, help: "Show the version of the tool.")
+    private var version: Bool = false
     
     public static let configuration = CommandConfiguration(
         commandName: "swiftsheetgen",
@@ -17,9 +21,10 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
 
     public init() {}
 
-    public func run() async throws {
-        print("Please specify a subcommand: 'localization' or 'colors'")
-        throw ExitCode.validationFailure
+    public func run() throws {
+        if version {
+            print(Self.version)
+        }
     }
 }
 

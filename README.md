@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="icon.png" alt="SwiftSheetGen Logo"/>
+  <img src="icon.png" alt="SwiftSheetGen Logo" width="500"/>
 </p>
 
 <p align="center">

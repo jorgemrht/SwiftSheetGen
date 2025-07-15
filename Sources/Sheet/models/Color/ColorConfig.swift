@@ -8,7 +8,7 @@ public struct ColorConfig: Sendable {
     public init(
         outputDirectory: String = "Colors",
         csvFileName: String = "generated_colors.csv",
-        cleanupTemporaryFiles: Bool = true,
+        cleanupTemporaryFiles: Bool = true
     ) {
         self.outputDirectory = outputDirectory
         self.csvFileName = csvFileName
@@ -22,12 +22,12 @@ public struct ColorConfig: Sendable {
     public static func custom(
         outputDirectory: String,
         csvFileName: String,
-        cleanupTemporaryFiles: Bool,
+        cleanupTemporaryFiles: Bool
     ) -> ColorConfig {
         ColorConfig(
             outputDirectory: outputDirectory,
             csvFileName: csvFileName,
-            cleanupTemporaryFiles: cleanupTemporaryFiles,
+            cleanupTemporaryFiles: cleanupTemporaryFiles
         )
     }
 }

@@ -7,9 +7,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/jorge/SwiftSheetGen/actions"><img src="https://img.shields.io/github/actions/workflow/status/jorge/SwiftSheetGen/swift.yml?branch=main&style=for-the-badge" alt="Build Status"></a>
+  <a href="https://github.com/jorgemrht/SwiftSheetGen/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/jorgemrht/SwiftSheetGen/release.yml?branch=main&style=for-the-badge" alt="Build Status"></a>
+  <a href="https://github.com/jorgemrht/SwiftSheetGen/releases"><img src="https://img.shields.io/github/v/release/jorgemrht/SwiftSheetGen?style=for-the-badge" alt="Latest Release"></a>
   <a href="https://swift.org"><img src="https://img.shields.io/badge/Swift-6.0+-orange?style=for-the-badge" alt="Swift Version"></a>
-  <a href="/LICENSE"><img src="https://img.shields.io/github/license/jorge/SwiftSheetGen?style=for-the-badge" alt="License"></a>
+  <a href="/LICENSE"><img src="https://img.shields.io/github/license/jorgemrht/SwiftSheetGen?style=for-the-badge" alt="License"></a>
 </p>
 
 ---
@@ -28,13 +29,22 @@ SwiftSheetGen solves this by using a **Google Sheet as a single source of truth*
 
 ### Homebrew (Recommended)
 ```bash
-brew install jorge/tap/swiftsheetgen
+brew install jorgemrht/swiftSheetGen/swiftsheetgen
+```
+
+Alternatively, you can first add the tap and then install the formula:
+```bash
+# 1. Add the tap (a repository of formulas)
+brew tap jorgemrht/swiftSheetGen
+
+# 2. Install the tool
+brew install swiftsheetgen
 ```
 
 ### From Source
 Build the tool from the source and move it to a location in your `PATH`.
 ```bash
-git clone https://github.com/jorge/SwiftSheetGen.git
+git clone https://github.com/jorgemrht/SwiftSheetGen.git
 cd SwiftSheetGen
 swift build -c release
 sudo cp .build/release/swiftsheetgen /usr/local/bin/

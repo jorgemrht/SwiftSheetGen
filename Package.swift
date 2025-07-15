@@ -66,7 +66,7 @@ let package = Package(
             ],
             path: "Sources/SwiftSheetGenCLI",
             swiftSettings: [
-                .define("SWIFTSHEETGEN_VERSION", to: "\"\(versionString)\"")
+                .unsafeFlags(["-D", "SWIFTSHEETGEN_VERSION=\"(versionString)\""])
             ]
         ),
         

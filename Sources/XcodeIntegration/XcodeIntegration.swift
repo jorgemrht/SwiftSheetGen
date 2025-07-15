@@ -135,7 +135,7 @@ public struct XcodeIntegration: Sendable {
         
         try await addFiles(
             projectPath: projectPath,
-            files: filesToAdd,
+            files: filesToAdd
         )
     }
     

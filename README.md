@@ -7,8 +7,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/jorgemrht/SwiftSheetGen/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/jorgemrht/SwiftSheetGen/release.yml?branch=main&style=for-the-badge" alt="Build Status"></a>
-  <a href="https://github.com/jorgemrht/SwiftSheetGen/releases"><img src="https://img.shields.io/github/v/release/jorgemrht/SwiftSheetGen?style=for-the-badge" alt="Latest Release"></a>
+  <a href="https://github.com/jorgemrht/SwiftSheetGen/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/jorgemrht/SwiftSheetGen/ci.yml?branch=main&style=for-the-badge" alt="Build Status"></a>
+  <a href="https://github.com/jorgemrht/SwiftSheetGen/releases"><img src="https://img.shields.io/github/v/release/jorgemrht/SwiftSheetGen?include_prereleases&style=for-the-badge" alt="Latest Release"></a>
   <a href="https://swift.org"><img src="https://img.shields.io/badge/Swift-6.0+-orange?style=for-the-badge" alt="Swift Version"></a>
   <a href="/LICENSE"><img src="https://img.shields.io/github/license/jorgemrht/SwiftSheetGen?style=for-the-badge" alt="License"></a>
 </p>

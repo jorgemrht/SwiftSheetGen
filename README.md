@@ -1,5 +1,3 @@
-# SwiftSheetGen
-
 <p align="center">
   <img src="icon.png" alt="SwiftSheetGen Logo"/>
 </p>
@@ -15,6 +13,8 @@
 </p>
 
 ---
+
+# SwiftSheetGen
 
 **SwiftSheetGen** is a command-line tool that transforms your team's collaborative Google Sheets for strings and colors into compile-time safe Swift code, eliminating manual errors and keeping your Xcode project in perfect sync.
 

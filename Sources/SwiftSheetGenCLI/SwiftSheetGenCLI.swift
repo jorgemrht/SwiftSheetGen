@@ -8,7 +8,11 @@ import os.log
 @main
 public struct SwiftSheetGenCLI: AsyncParsableCommand {
     
+    #if SWIFTSHEETGEN_VERSION
     private static let version = SWIFTSHEETGEN_VERSION
+    #else
+    private static let version = "0.0.0-development"
+    #endif
 
     @Flag(name: .long, help: "Show the version of the tool.")
     private var version: Bool = false

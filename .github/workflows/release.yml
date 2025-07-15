@@ -69,7 +69,7 @@ jobs:
           echo "Cloning tap repository..."
           git clone https://x-access-token:${{ env.TAP_TOKEN }}@github.com/jorgemrht/homebrew-swiftSheetGen.git homebrew-tap
           
-          cd homebrew-tools
+          cd homebrew-tap
 
           echo "Creating/Updating formula file..."
           cat > swiftsheetgen.rb << EOF

@@ -30,7 +30,7 @@ jobs:
       - name: Package the binary
         run: |
           mkdir -p dist
-          cp .build/universal/release/swiftsheetgen dist/
+          cp .build/apple/Products/Release/swiftsheetgen dist/
           tar -czf "swiftsheetgen-${{ env.VERSION }}.tar.gz" -C dist swiftsheetgen
 
       - name: Calculate SHA256

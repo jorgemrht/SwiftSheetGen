@@ -23,7 +23,9 @@ jobs:
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
 
       - name: Build Swift CLI for universal macOS
-        run: swift build -c release --arch arm64 --arch x86_64 -Xswiftc -DSWIFTSHEETGEN_VERSION="\"${{ env.VERSION }}\""
+        env:
+          SWIFTSHEETGEN_VERSION: ${{ env.VERSION }}
+        run: swift build -c release --arch arm64 --arch x86_64
 
       - name: Package the binary
         run: |

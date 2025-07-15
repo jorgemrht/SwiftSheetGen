@@ -1,5 +1,8 @@
 // swift-tools-version: 6.0
 import PackageDescription
+import Foundation
+
+let versionString = ProcessInfo.processInfo.environment["SWIFTSHEETGEN_VERSION"] ?? "0.0.0-development"
 
 let package = Package(
     name: "SwiftSheetGen",
@@ -61,7 +64,10 @@ let package = Package(
                 "XcodeIntegration",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
-            path: "Sources/SwiftSheetGenCLI"
+            path: "Sources/SwiftSheetGenCLI",
+            swiftSettings: [
+                .define("SWIFTSHEETGEN_VERSION", to: "\"\(versionString)\"")
+            ]
         ),
         
         // MARK: - Tests

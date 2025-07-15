@@ -1,0 +1,96 @@
+name: Release and Publish
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    name: Release SwiftSheetGen
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+
+      - name: Build Swift CLI for universal macOS
+        run: swift build -c release --arch arm64 --arch x86_64 -Xswiftc -DSWIFTSHEETGEN_VERSION="\"${{ env.VERSION }}\""
+
+      - name: Package the binary
+        run: |
+          mkdir -p dist
+          cp .build/universal/release/swiftsheetgen dist/
+          tar -czf "swiftsheetgen-${{ env.VERSION }}.tar.gz" -C dist swiftsheetgen
+
+      - name: Calculate SHA256
+        id: shasum
+        run: |
+          HASH=$(shasum -a 256 "swiftsheetgen-${{ env.VERSION }}.tar.gz" | awk '{print $1}')
+          echo "HASH=$HASH" >> $GITHUB_ENV
+          echo "Calculated hash: $HASH"
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ env.VERSION }}
+          body: "Release of version ${{ env.VERSION }}"
+          draft: false
+          prerelease: ${{ contains(github.ref, '-beta') || contains(github.ref, '-alpha') || contains(github.ref, '-rc') }}
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./swiftsheetgen-${{ env.VERSION }}.tar.gz
+          asset_name: swiftsheetgen-${{ env.VERSION }}.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Update Homebrew Tap
+        env:
+          TAP_TOKEN: ${{ secrets.PAT }}
+        run: |
+          echo "Cloning tap repository..."
+          git clone https://x-access-token:${{ env.TAP_TOKEN }}@github.com/jorgemrht/homebrew-swiftSheetGen.git homebrew-tap
+          
+          cd homebrew-tools
+
+          echo "Creating/Updating formula file..."
+          cat > swiftsheetgen.rb << EOF
+          class Swiftsheetgen < Formula
+            desc "Generate type-safe Swift code from a Google Sheet"
+            homepage "https://github.com/jorgemrht/SwiftSheetGen"
+            url "https://github.com/jorgemrht/SwiftSheetGen/releases/download/${{ github.ref }}/swiftsheetgen-${{ env.VERSION }}.tar.gz"
+            sha256 "${{ env.HASH }}"
+            license "MIT"
+
+            def install
+              bin.install "swiftsheetgen"
+            end
+
+            test do
+              system "#{bin}/swiftsheetgen", "--help"
+            end
+          end
+          EOF
+
+          echo "Committing and pushing changes..."
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add swiftsheetgen.rb
+          # Comprueba si hay cambios para evitar commits vacíos
+          if ! git diff --staged --quiet; then
+            git commit -m "Update swiftsheetgen to version ${{ env.VERSION }}"
+            git push
+          else
+            echo "No changes to commit."
+          fi

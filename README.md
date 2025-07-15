@@ -1,7 +1,7 @@
 # SwiftSheetGen
 
 <p align="center">
-  <img src="https://github.com/jorgemrht/SwiftSheetGen/icon.png" alt="SwiftSheetGen Logo" width="250"/>
+  <img src="icon.png" alt="SwiftSheetGen Logo" width="250"/>
 </p>
 
 <p align="center">

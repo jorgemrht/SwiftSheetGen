@@ -41,6 +41,12 @@ brew tap jorgemrht/swiftSheetGen
 brew install swiftsheetgen
 ```
 
+### Updating
+To update to the latest version, simply run the upgrade command:
+```bash
+brew upgrade swiftsheetgen
+```
+
 ### From Source
 Build the tool from the source and move it to a location in your `PATH`.
 ```bash
@@ -98,12 +104,37 @@ These options are available for both the `localization` and `colors` commands:
 ## Integrations
 
 ### Xcode
-The tool automatically integrates the generated files into your Xcode project.
+The tool automatically integrates the generated files into your Xcode project, adding them to the Project Navigator and the correct build phases.
 
-- **Compatibility:** This feature is fully compatible with **Xcode 15 and newer**.
-- **Older Xcode Versions:** On older versions, if files do not appear automatically, you may need to **drag and drop them manually from Finder** for the initial setup.
+- **Project Compatibility:** Automatic integration is only supported for projects created or last saved with **Xcode 15 or newer**. The tool modifies the `.pbxproj` file, and its structure changes between major Xcode versions.
+- **Older Projects (Xcode 14 and below):** If your project was created with an older version of Xcode, the automatic integration will be skipped to avoid corrupting the project file. In this case, you must **drag and drop the generated files manually from Finder** into your Xcode Project Navigator for the initial setup.
 
-For the integration to work, the directory you specify in `--output-dir` **must be the one that contains your `.xcodeproj` file**.
+#### How Automatic Integration Works
+For the tool to find your project file (`.xcodeproj`), it automatically searches the current directory and up to two parent directories. This makes integration seamless in most cases.
+
+*   **Running from the project root or a subdirectory:**
+    If your terminal's current location is inside your project's folder structure, the tool will find the `.xcodeproj` automatically.
+
+    ```bash
+    # If your project is at /path/to/YourApp, you can run the command from:
+    # /path/to/YourApp
+    # /path/to/YourApp/Subfolder
+    # /path/to/YourApp/Subfolder/AnotherSubfolder
+
+    swiftsheetgen localization "..."
+    ```
+
+*   **Using the `--output-dir` option:**
+    The `--output-dir` flag is optional and serves two purposes:
+    1.  It specifies where the generated files should be saved.
+    2.  It acts as the starting point for the Xcode project search.
+
+    You only need this if you run the command from a location outside your project's folder or if you want to save the generated files in a very specific place.
+
+    ```bash
+    # Run from anywhere by telling the tool where your project is
+    swiftsheetgen localization "..." --output-dir /path/to/YourApp
+    ```
 
 ### Tuist
 If a `Project.swift` or `Workspace.swift` file is detected in your project's root, SwiftSheetGen will skip the automatic Xcode integration and print instructions for you to add the generated files to your Tuist manifest.

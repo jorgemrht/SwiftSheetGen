@@ -13,24 +13,15 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
     #else
     private static let version = "0.0.0-development"
     #endif
-
-    @Flag(name: .long, help: "Show the version of the tool.")
-    private var version: Bool = false
     
     public static let configuration = CommandConfiguration(
         commandName: "swiftsheetgen",
         abstract: "A command-line tool for generating localizables and colors from Google Sheets data.",
+        version: Self.version,
         subcommands: [LocalizationCommand.self, ColorsCommand.self]
     )
 
     public init() {}
-
-    public func run() throws {
-        if version {
-            print(Self.version)
-        }
-        return
-    }
 }
 
 // MARK: - Localization Command

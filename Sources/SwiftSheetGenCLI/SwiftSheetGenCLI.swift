@@ -29,6 +29,7 @@ public struct SwiftSheetGenCLI: AsyncParsableCommand {
         if version {
             print(Self.version)
         }
+        return
     }
 }
 

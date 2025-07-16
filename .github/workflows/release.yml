@@ -25,7 +25,7 @@ jobs:
       - name: Build Swift CLI for universal macOS
         env:
           SWIFTSHEETGEN_VERSION: ${{ env.VERSION }}
-        run: swift build -c release --arch arm64 --arch x86_64
+        run: swift build -c release --arch arm64 --arch x86_64 -Xswiftc -DSWIFTSHEETGEN_VERSION="\"${{ env.VERSION }}\""
 
       - name: Package the binary
         run: |

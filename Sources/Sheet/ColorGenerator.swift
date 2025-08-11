@@ -23,8 +23,7 @@ public struct ColorGenerator:  Sendable {
         Self.logger.info("Processing CSV \(csvPath, privacy: .public)")
 
         // 1. Parse CSV
-        let content = try String(contentsOfFile: csvPath, encoding: .utf8)
-        let rows = try CSVParser.parse(content)
+        let rows = try await parseCSV(csvPath: csvPath)
         
         // 2. Validate CSV
         try validateCSVStructure(rows)
@@ -268,6 +267,17 @@ public struct ColorGenerator:  Sendable {
 
     private func cleanupTemporaryCSV(at csvPath: String) async throws {
         try await GeneratorHelper.cleanupTemporaryFile(at: csvPath, logger: Self.logger)
+    }
+    
+    // MARK: - CSV Parsing
+    
+    private func parseCSV(csvPath: String) async throws -> [[String]] {
+        let fileSize = try FileManager.default.attributesOfItem(atPath: csvPath)[.size] as? Int64 ?? 0
+        let fileSizeInMB = Double(fileSize) / (1024 * 1024)
+        
+        Self.logger.info("CSV file size: \(String(format: "%.2f", fileSizeInMB)) MB")
+        
+        return try await CSVParser.parse(filePath: csvPath)
     }
     
     // MARK: - Detect Tuist Project

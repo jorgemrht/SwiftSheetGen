@@ -37,22 +37,18 @@ public struct SwiftEnumGenerator: Sendable {
 
         codeComponents.append("""
         
-            /// Returns the localized string for this key
             public var localized: String {
                 NSLocalizedString(self.rawValue, bundle: .main, comment: "")
             }
             
-            /// Returns a formatted localized string with arguments
             public func localized(_ args: CVarArg...) -> String {
                 String(format: localized, arguments: args)
             }
             
-            /// Returns localized string with specific bundle
             public func localized(bundle: Bundle) -> String {
                 NSLocalizedString(self.rawValue, bundle: bundle, comment: "")
             }
             
-            /// SwiftUI compatible computed property
             @available(iOS 13.0, macOS 10.15, *)
             public var localizedString: LocalizedStringKey {
                 LocalizedStringKey(self.rawValue)

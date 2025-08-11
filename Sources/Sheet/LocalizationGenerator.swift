@@ -49,22 +49,38 @@ public struct LocalizationGenerator: Sendable {
         
         // 4. Generate Localization Files
         if config.useStringsCatalog {
+            // Only generate strings catalog for modern localization
             try await generateStringsCatalog(languages: languages, entries: entries)
         } else {
-            try await generateLocalizationFiles(languages: languages, entries: entries)
-        }
-        
-        if !config.useStringsCatalog {
+            // Generate .strings files and Swift enum
             let allKeys = Set(entries.map(\.key)).sorted()
-            try await generateSwiftEnum(allKeys: allKeys)
+            
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                group.addTask {
+                    try await self.generateLocalizationFiles(languages: languages, entries: entries)
+                }
+                
+                group.addTask {
+                    try await self.generateSwiftEnum(allKeys: allKeys)
+                }
+                
+                try await group.waitForAll()
+            }
         }
         
-        // 5. Add generated files to Xcode (if configured)
-        try await addGeneratedFilesToXcode(languages: languages)
-        
-        // 6. Cleanup Temporary Files
-        if config.cleanupTemporaryFiles {
-            try await cleanupTemporaryCSV(at: csvPath)
+        // 5. Xcode integration + cleanup
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            group.addTask {
+                try await self.addGeneratedFilesToXcode(languages: languages)
+            }
+            
+            if config.cleanupTemporaryFiles {
+                group.addTask {
+                    try await self.cleanupTemporaryCSV(at: csvPath)
+                }
+            }
+            
+            try await group.waitForAll()
         }
     }
 

@@ -42,15 +42,31 @@ public struct ColorGenerator:  Sendable {
         Self.logger.info("Detected \(colorEntries.count) color entries.")
 
         // 4. Generate Colors Files
-        try await generateColorsFile(entries: colorEntries)
-        try await generateColorDynamicFile()
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            group.addTask {
+                try await self.generateColorsFile(entries: colorEntries)
+            }
+            
+            group.addTask {
+                try await self.generateColorDynamicFile()
+            }
+            
+            try await group.waitForAll()
+        }
 
-        // 5. Add generated files to Xcode (if configured)
-        try await addGeneratedFilesToXcode()
-        
-        // 6. Cleanup Temporary Files
-        if config.cleanupTemporaryFiles {
-            try await cleanupTemporaryCSV(at: csvPath)
+        // 5. Xcode integration + cleanup
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            group.addTask {
+                try await self.addGeneratedFilesToXcode()
+            }
+            
+            if config.cleanupTemporaryFiles {
+                group.addTask {
+                    try await self.cleanupTemporaryCSV(at: csvPath)
+                }
+            }
+            
+            try await group.waitForAll()
         }
     }
 

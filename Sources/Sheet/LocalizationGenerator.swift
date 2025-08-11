@@ -18,6 +18,7 @@ public struct LocalizationGenerator: Sendable {
     
     public func generate(from csvPath: String) async throws {
         
+        Self.logger.info("--- FORCING RECOMPILE: Cache Buster 1 ---")
         try Task.checkCancellation()
         Self.logger.info("Processing CSV: \(csvPath, privacy: .public)")
       
@@ -48,10 +49,16 @@ public struct LocalizationGenerator: Sendable {
         Self.logger.info("Detected entries: \(entries.count, privacy: .public)")
         
         // 4. Generate Localization Files
-        try await generateLocalizationFiles(languages: languages, entries: entries)
+        if config.useStringsCatalog {
+            try await generateStringsCatalog(languages: languages, entries: entries)
+        } else {
+            try await generateLocalizationFiles(languages: languages, entries: entries)
+        }
         
-        let allKeys = Set(entries.map(\.key)).sorted()
-        try await generateSwiftEnum(allKeys: allKeys)
+        if !config.useStringsCatalog {
+            let allKeys = Set(entries.map(\.key)).sorted()
+            try await generateSwiftEnum(allKeys: allKeys)
+        }
         
         // 5. Add generated files to Xcode (if configured)
         try await addGeneratedFilesToXcode(languages: languages)
@@ -196,6 +203,34 @@ public struct LocalizationGenerator: Sendable {
 
     // MARK: - File Generation
 
+    private func generateStringsCatalog(languages: [String], entries: [LocalizationEntry]) async throws {
+        let sourceLanguage = languages.first ?? "en"
+        Self.logger.debug("Attempting to generate Strings Catalog with source language: \(sourceLanguage)")
+        
+        let catalogData = try StringsCatalogGenerator.generate(
+            for: entries,
+            sourceLanguage: sourceLanguage,
+            developmentRegion: sourceLanguage
+        )
+        
+        let outputPath = "\(config.outputDirectory)/Localizable.xcstrings"
+        Self.logger.info("Attempting to generate Strings Catalog at path: \(outputPath)")
+        let fileURL = URL(fileURLWithPath: outputPath)
+        
+        let directoryURL = fileURL.deletingLastPathComponent()
+        Self.logger.info("Ensuring directory exists: \(directoryURL.path)")
+        try FileManager.default.createDirectory(
+            at: directoryURL,
+            withIntermediateDirectories: true,
+            attributes: nil
+        )
+        Self.logger.info("Directory confirmed to exist.")
+
+        Self.logger.info("Attempting to write \(catalogData.count) bytes to file...")
+        try catalogData.write(to: fileURL)
+        Self.logger.info("Successfully wrote data to: \(fileURL.path)")
+    }
+
     private func generateLocalizationFiles(languages: [String], entries: [LocalizationEntry]) async throws {
         try await withThrowingTaskGroup(of: Void.self) { group in
             for language in languages {
@@ -278,8 +313,14 @@ public struct LocalizationGenerator: Sendable {
             Self.logger.info("1. Add the generated files to your Project.swift manifest")
             Self.logger.info("2. Run 'tuist generate' to update your Xcode project")
             Self.logger.info("📁 Generated files in: \(config.outputDirectory)/")
-            Self.logger.info("   • Colors.swift")
-            Self.logger.info("   • Color+Dynamic.swift")
+            if config.useStringsCatalog {
+                Self.logger.info("   • Localizable.xcstrings (Strings Catalog)")
+            } else {
+                for language in languages {
+                    Self.logger.info("   • \(language).lproj/Localizable.strings")
+                }
+                Self.logger.info("   • \(config.enumName).swift")
+            }
             return
         }
         
@@ -289,16 +330,34 @@ public struct LocalizationGenerator: Sendable {
             Self.logger.error("No .xcodeproj found in current or parent directories")
             return
         }
+        
 
-        let localizationFiles = languages.map { "\(config.outputDirectory)/\($0).lproj/Localizable.strings" }
-        let enumFile = "\(config.sourceDirectory)/\(config.enumName).swift"
+        if config.useStringsCatalog {
+            let catalogPath = "\(config.outputDirectory)/Localizable.xcstrings"
+            Self.logger.info("🔗 Adding Strings Catalog to Xcode project: \(catalogPath)")
+            
+            try await XcodeIntegration.addStringsCatalogFile(
+                projectPath: projectPath,
+                catalogPath: catalogPath
+            )
+            
+            Self.logger.info("✅ Successfully integrated Strings Catalog with Xcode")
+        } else {
+            let localizationFiles = languages.map { "\(config.outputDirectory)/\($0).lproj/Localizable.strings" }
+            
+            let enumFile: String?
+            enumFile = "\(config.sourceDirectory)/\(config.enumName).swift"
+            if let enumFile {
+                Self.logger.info("Prepared for Xcode integration: \(enumFile)")
+            }
 
-        try await XcodeIntegration.addLocalizationFiles(
-            projectPath: projectPath,
-            generatedFiles: localizationFiles,
-            languages: languages,
-            enumFile: enumFile
-        )
+            try await XcodeIntegration.addLocalizationFiles(
+                projectPath: projectPath,
+                generatedFiles: localizationFiles,
+                languages: languages,
+                enumFile: enumFile
+            )
+        }
     }
 
     // MARK: - Helper Functions

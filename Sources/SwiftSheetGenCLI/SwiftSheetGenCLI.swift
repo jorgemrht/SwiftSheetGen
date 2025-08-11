@@ -47,6 +47,9 @@ public struct LocalizationCommand: AsyncParsableCommand, SheetGenCommand {
     @Flag(name: .long, help: "📂 Generate Swift enum file separate from localization directories")
     var enumSeparateFromLocalizations: Bool = false
 
+    @Flag(name: .long, help: "📦 Use modern Xcode Strings Catalog (.xcstrings) for localization")
+    var useStringsCatalog: Bool = false
+
     public init() {}
     
     func createConfiguration() throws -> LocalizationConfig {
@@ -62,7 +65,8 @@ public struct LocalizationCommand: AsyncParsableCommand, SheetGenCommand {
             sourceDirectory: enumSeparateFromLocalizations ? trimmedBaseDirectory : outputDirectory,
             csvFileName: "generated_localizations.csv",
             cleanupTemporaryFiles: !sharedOptions.keepCSV,
-            unifiedLocalizationDirectory: !enumSeparateFromLocalizations
+            unifiedLocalizationDirectory: !enumSeparateFromLocalizations,
+            useStringsCatalog: useStringsCatalog
         )
     }
 

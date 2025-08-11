@@ -23,6 +23,7 @@ public struct XcodeIntegration: Sendable {
     public enum FileType: String, CaseIterable, Sendable {
         case swift = "sourcecode.swift"
         case localizableStrings = "text.plist.strings"
+        case stringsCatalog = "text.json.xcstrings"
         case plist = "text.plist.xml"
         case json = "text.json"
         case xcassets = "folder.assetcatalog"
@@ -37,7 +38,7 @@ public struct XcodeIntegration: Sendable {
             switch self {
             case .swift:
                 return .sources
-            case .localizableStrings, .plist, .json, .xcassets, .storyboard, .xib:
+            case .localizableStrings, .stringsCatalog, .plist, .json, .xcassets, .storyboard, .xib:
                 return .resources
             case .framework, .library:
                 return .frameworks
@@ -148,6 +149,18 @@ public struct XcodeIntegration: Sendable {
         try await addFiles(
             projectPath: projectPath,
             files: filesToAdd
+        )
+    }
+    
+    public static func addStringsCatalogFile(
+        projectPath: String,
+        catalogPath: String
+    ) async throws {
+        let catalogFile = FileToAdd(path: catalogPath, fileType: .stringsCatalog)
+        
+        try await addFiles(
+            projectPath: projectPath,
+            files: [catalogFile]
         )
     }
     
@@ -373,6 +386,8 @@ public struct XcodeIntegration: Sendable {
                 if file.fileType == .localizableStrings {
                     logger.info("Ensuring \(file.fileName) is properly configured in Resources")
                     content = ensureFileInResourcesBuildPhase(content, localizableStringsPath: file.path)
+                } else if file.fileType == .stringsCatalog {
+                    logger.info("Strings Catalog file \(file.fileName) already exists and is properly configured")
                 } else {
                     logger.info("File \(file.fileName) already exists and is properly configured")
                 }
@@ -455,7 +470,7 @@ public struct XcodeIntegration: Sendable {
         }
         
         mutating func validateAndRepairFileIntegrity(_ file: FileToAdd) throws -> Bool {
-            guard file.fileType == .localizableStrings else {
+            guard file.fileType == .localizableStrings || file.fileType == .stringsCatalog else {
                 return false // Solo para archivos de localización
             }
             

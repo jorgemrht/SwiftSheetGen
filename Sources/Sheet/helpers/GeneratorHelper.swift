@@ -5,21 +5,30 @@ import os.log
 struct GeneratorHelper {
 
     static func findXcodeProjectPath(logger: Logger) throws -> String? {
-        let currentDir = FileManager.default.currentDirectoryPath
-        let searchPaths = [currentDir, "\(currentDir)/..", "\(currentDir)/../.."]
-
-        for searchPath in searchPaths {
-            let resolvedPath = URL(fileURLWithPath: searchPath).standardized.path
-            do {
-                let contents = try FileManager.default.contentsOfDirectory(atPath: resolvedPath)
-                if let xcodeproj = contents.first(where: { $0.hasSuffix(".xcodeproj") }) {
-                    logger.info("Found Xcode project: \(xcodeproj) in \(resolvedPath)")
-                    return resolvedPath
+        let fileManager = FileManager.default
+        let currentDir = fileManager.currentDirectoryPath
+        
+        var searchDir = URL(fileURLWithPath: currentDir)
+        
+        for _ in 0..<5 {
+            if let enumerator = fileManager.enumerator(at: searchDir, includingPropertiesForKeys: nil, options: [.skipsSubdirectoryDescendants, .skipsHiddenFiles]) {
+                for case let fileURL as URL in enumerator {
+                    if fileURL.pathExtension == "xcodeproj" {
+                        let projectPath = fileURL.deletingLastPathComponent().path
+                        logger.info("Found Xcode project at: \(projectPath)")
+                        return projectPath
+                    }
                 }
-            } catch {
-                logger.debug("Could not read directory: \(resolvedPath)")
+            }
+            
+            if searchDir.pathComponents.count > 1 {
+                searchDir.deleteLastPathComponent()
+            } else {
+                break
             }
         }
+        
+        logger.warning("No .xcodeproj found in current directory or parent directories.")
         return nil
     }
 

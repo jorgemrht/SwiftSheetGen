@@ -3,6 +3,53 @@ import CoreExtensions
 import OSLog
 import RegexBuilder
 
+// MARK: - Regex Cache
+
+private actor RegexCache {
+    private var cache: [String: NSRegularExpression] = [:]
+    
+    func regex(for pattern: String, options: NSRegularExpression.Options = []) throws -> NSRegularExpression {
+        let key = "\(pattern)_\(options.rawValue)"
+        
+        if let cached = cache[key] {
+            return cached
+        }
+        
+        let regex = try NSRegularExpression(pattern: pattern, options: options)
+        cache[key] = regex
+        return regex
+    }
+    
+    func preloadCommonPatterns() throws {
+        let commonPatterns: [(String, NSRegularExpression.Options)] = [
+            // UUID patterns
+            (#"[A-Fa-f0-9]{24}"#, []),
+            (#"[A-Fa-f0-9]{32}"#, []),
+            (#"[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}"#, []),
+            
+            // Build phase patterns
+            (#"targets = \(\s*([A-Fa-f0-9]{24})"#, [.caseInsensitive]),
+            (#"targets = \(\s*([A-Fa-f0-9]{32})"#, [.caseInsensitive]),
+            
+            // Section patterns
+            ("(/* Begin PBXFileReference section */[\\s\\S]*?)(\\n/* End PBXFileReference section */)", []),
+            ("(/* Begin PBXBuildFile section */[\\s\\S]*?)(\\n/* End PBXBuildFile section */)", []),
+            
+            // Build file patterns
+            ("(children = \\([\\s\\S]*?)(\\n\\t\\t\\t\\);)", []),
+            ("(/* Resources \\*/ = \\{[\\s\\S]*?files = \\([\\s\\S]*?)(\\);)", [])
+        ]
+        
+        for (pattern, options) in commonPatterns {
+            try _ = regex(for: pattern, options: options)
+        }
+    }
+    
+    func clearCache() {
+        cache.removeAll()
+    }
+}
+
 public struct XcodeIntegration: Sendable {
     
     // MARK: - Types
@@ -106,6 +153,7 @@ public struct XcodeIntegration: Sendable {
     // MARK: - Properties
     
     private static let logger = Logger.xcodeIntegration
+    private static let regexCache = RegexCache()
     
     // MARK: - Public Interface
     
@@ -183,6 +231,14 @@ public struct XcodeIntegration: Sendable {
     
     // MARK: - Private Implementation
     
+    private static func cachedRegex(for pattern: String, options: NSRegularExpression.Options = []) async throws -> NSRegularExpression {
+        return try await regexCache.regex(for: pattern, options: options)
+    }
+    
+    private static func preloadRegexCache() async throws {
+        try await regexCache.preloadCommonPatterns()
+    }
+    
     private static func findPbxprojFile(in directory: String) throws -> String {
         let fileManager = FileManager.default
         
@@ -212,10 +268,13 @@ public struct XcodeIntegration: Sendable {
     ) async throws {
         logger.info("Updating project.pbxproj at: \(pbxprojPath)")
         
+        // Preload regex cache for better performance
+        try await preloadRegexCache()
+        
         let content = try String(contentsOfFile: pbxprojPath, encoding: .utf8)
         try validateProjectStructure(content)
         
-        var projectContent = ProjectContent(content: content)
+        var projectContent = ProjectContent(content: content, regexCache: regexCache)
         var hasChanges = false
         
         for file in files {
@@ -235,7 +294,7 @@ public struct XcodeIntegration: Sendable {
         }
         
         if hasChanges {
-            try projectContent.write(to: pbxprojPath)
+            try await projectContent.write(to: pbxprojPath)
             logger.info("Successfully updated project.pbxproj")
         } else {
             logger.info("No changes needed for project.pbxproj")
@@ -250,7 +309,7 @@ public struct XcodeIntegration: Sendable {
         
         if !fileExists {
             logger.info("Adding \(file.fileName) to project")
-            try projectContent.addFile(file)
+            try await projectContent.addFile(file)
             return true
         } else {
             logger.info("File \(file.fileName) already exists - skipping")
@@ -259,7 +318,7 @@ public struct XcodeIntegration: Sendable {
     }
 
 
-    private static func findLocalizableStringsReference(in content: String, for path: String) -> String? {
+    private static func findLocalizableStringsReference(in content: String, for path: String) async -> String? {
         let patterns = [
             "([A-Fa-f0-9]{24}) /\\* Localizable\\.strings in [^\\*]+ \\*/ = \\{[^}]*path = \(NSRegularExpression.escapedPattern(for: path))",
             "([A-Fa-f0-9]{32}) /\\* Localizable\\.strings in [^\\*]+ \\*/ = \\{[^}]*path = \(NSRegularExpression.escapedPattern(for: path))",
@@ -268,7 +327,7 @@ public struct XcodeIntegration: Sendable {
         
         for pattern in patterns {
             do {
-                let regex = try NSRegularExpression(pattern: pattern, options: [])
+                let regex = try await cachedRegex(for: pattern)
                 if let match = regex.firstMatch(in: content, options: [], range: NSRange(content.startIndex..., in: content)),
                    match.numberOfRanges > 1,
                    let uuidRange = Range(match.range(at: 1), in: content) {
@@ -284,11 +343,11 @@ public struct XcodeIntegration: Sendable {
     }
 
     
-    private static func ensureFileInResourcesBuildPhase(_ content: String, localizableStringsPath: String) -> String {
+    private static func ensureFileInResourcesBuildPhase(_ content: String, localizableStringsPath: String, regexCache: RegexCache) async -> String {
         let fileRefPattern = "([A-Fa-f0-9]{24}) /\\* Localizable\\.strings in [^\\*]+ \\*/ = \\{[^}]*path = \(NSRegularExpression.escapedPattern(for: localizableStringsPath))"
         
         do {
-            let regex = try NSRegularExpression(pattern: fileRefPattern, options: [])
+            let regex = try await regexCache.regex(for: fileRefPattern)
             guard let match = regex.firstMatch(in: content, options: [], range: NSRange(content.startIndex..., in: content)),
                   match.numberOfRanges > 1,
                   let uuidRange = Range(match.range(at: 1), in: content) else {
@@ -300,7 +359,7 @@ public struct XcodeIntegration: Sendable {
             
             // Verificar si el archivo ya está en la fase de Resources
             let buildPhasePattern = "\\* Resources \\*/ = \\{[\\s\\S]*?files = \\([\\s\\S]*?\(fileUUID)[\\s\\S]*?\\);"
-            let buildRegex = try NSRegularExpression(pattern: buildPhasePattern, options: [])
+            let buildRegex = try await regexCache.regex(for: buildPhasePattern)
             
             if buildRegex.firstMatch(in: content, options: [], range: NSRange(content.startIndex..., in: content)) != nil {
                 logger.info("File \(localizableStringsPath) already in Resources build phase")
@@ -311,9 +370,9 @@ public struct XcodeIntegration: Sendable {
                 let buildFileReference = """
                 \t\t\(buildUUID) /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = \(fileUUID) /* Localizable.strings */; };
                 """
-                let updatedWithBuildFile = insertBuildFileReferences(content, references: [buildFileReference])
+                let updatedWithBuildFile = await insertBuildFileReferences(content, references: [buildFileReference], regexCache: regexCache)
                 let fileName = URL(fileURLWithPath: localizableStringsPath).lastPathComponent
-                return addToResourcesBuildPhase(updatedWithBuildFile, buildUUID: buildUUID, fileName: fileName)
+                return await addToResourcesBuildPhase(updatedWithBuildFile, buildUUID: buildUUID, fileName: fileName, regexCache: regexCache)
             }
         } catch {
             logger.error("Regex compilation failed in ensureFileInResourcesBuildPhase: \(error.localizedDescription)")
@@ -321,7 +380,7 @@ public struct XcodeIntegration: Sendable {
         }
     }
 
-    private static func addToResourcesBuildPhase(_ content: String, buildUUID: String, fileName: String) -> String {
+    private static func addToResourcesBuildPhase(_ content: String, buildUUID: String, fileName: String, regexCache: RegexCache) async -> String {
         let patterns = [
             "(/* Resources \\*/ = \\{[\\s\\S]*?files = \\([\\s\\S]*?)(\\);)",
             "(PBXResourcesBuildPhase[\\s\\S]*?files = \\([\\s\\S]*?)(\\);)",
@@ -331,17 +390,26 @@ public struct XcodeIntegration: Sendable {
         for pattern in patterns {
             let replacement = "$1\n\t\t\t\t\(buildUUID) /* \(fileName) in Resources */,$2"
             
-            if let range = content.range(of: pattern, options: .regularExpression) {
-                let updatedContent = content.replacingCharacters(in: range, with: content[range].replacingOccurrences(
-                    of: pattern,
-                    with: replacement,
-                    options: .regularExpression
-                ))
+            do {
+                let regex = try await regexCache.regex(for: pattern)
+                let range = NSRange(content.startIndex..., in: content)
                 
-                if updatedContent != content {
-                    logger.info("Successfully added \(fileName) to Resources build phase")
-                    return updatedContent
+                if regex.firstMatch(in: content, options: [], range: range) != nil {
+                    let updatedContent = regex.stringByReplacingMatches(
+                        in: content,
+                        options: [],
+                        range: range,
+                        withTemplate: replacement
+                    )
+                    
+                    if updatedContent != content {
+                        logger.info("Successfully added \(fileName) to Resources build phase")
+                        return updatedContent
+                    }
                 }
+            } catch {
+                logger.error("Regex error for pattern \(pattern): \(error)")
+                continue
             }
         }
         
@@ -355,12 +423,14 @@ public struct XcodeIntegration: Sendable {
         private var content: String
         private var fileReferences: [String] = []
         private var buildFileReferences: [String] = []
+        private let regexCache: RegexCache
         
-        init(content: String) {
+        init(content: String, regexCache: RegexCache) {
             self.content = content
+            self.regexCache = regexCache
         }
         
-        mutating func addFile(_ file: FileToAdd) throws {
+        mutating func addFile(_ file: FileToAdd) async throws {
             let uuid = generateUUID()
             let buildUUID = generateUUID()
             
@@ -374,18 +444,18 @@ public struct XcodeIntegration: Sendable {
             )
             buildFileReferences.append(buildFileReference)
             
-            addToMainGroup(fileUUID: uuid, file: file)
+            await addToMainGroup(fileUUID: uuid, file: file)
             
-            try addToBuildPhase(buildUUID: buildUUID, file: file)
+            try await addToBuildPhase(buildUUID: buildUUID, file: file)
         }
         
-        mutating func updateFile(_ file: FileToAdd) throws {
+        mutating func updateFile(_ file: FileToAdd) async throws {
             if !contains(file.path) {
-                try addFile(file)
+                try await addFile(file)
             } else {
                 if file.fileType == .localizableStrings {
                     logger.info("Ensuring \(file.fileName) is properly configured in Resources")
-                    content = ensureFileInResourcesBuildPhase(content, localizableStringsPath: file.path)
+                    content = await ensureFileInResourcesBuildPhase(content, localizableStringsPath: file.path, regexCache: regexCache)
                 } else if file.fileType == .stringsCatalog {
                     logger.info("Strings Catalog file \(file.fileName) already exists and is properly configured")
                 } else {
@@ -398,15 +468,15 @@ public struct XcodeIntegration: Sendable {
             return content.contains(path)
         }
         
-        func write(to path: String) throws {
+        func write(to path: String) async throws {
             var updatedContent = content
             
             if !fileReferences.isEmpty {
-                updatedContent = insertFileReferences(updatedContent, references: fileReferences)
+                updatedContent = await insertFileReferences(updatedContent, references: fileReferences, regexCache: regexCache)
             }
             
             if !buildFileReferences.isEmpty {
-                updatedContent = insertBuildFileReferences(updatedContent, references: buildFileReferences)
+                updatedContent = await insertBuildFileReferences(updatedContent, references: buildFileReferences, regexCache: regexCache)
             }
             
             try updatedContent.write(toFile: path, atomically: true, encoding: .utf8)
@@ -426,50 +496,55 @@ public struct XcodeIntegration: Sendable {
             """
         }
         
-        private mutating func addToMainGroup(fileUUID: String, file: FileToAdd) {
+        private mutating func addToMainGroup(fileUUID: String, file: FileToAdd) async {
             let languageComment = file.language.map { " in \($0)" } ?? ""
             let pattern = "(children = \\([\\s\\S]*?)(\\n\\t\\t\\t\\);)"
             let replacement = "$1\n\t\t\t\t\(fileUUID) /* \(file.fileName)\(languageComment) */,$2"
             
-            content = content.replacingOccurrences(
-                of: pattern,
-                with: replacement,
-                options: .regularExpression
-            )
+            do {
+                let regex = try await regexCache.regex(for: pattern)
+                let range = NSRange(content.startIndex..., in: content)
+                content = regex.stringByReplacingMatches(in: content, options: [], range: range, withTemplate: replacement)
+            } catch {
+                logger.error("Failed to add to main group: \(error)")
+            }
         }
         
-        private mutating func addToBuildPhase(buildUUID: String, file: FileToAdd) throws {
-            guard let mainTargetUUID = findMainTargetUUID(in: content) else {
+        private mutating func addToBuildPhase(buildUUID: String, file: FileToAdd) async throws {
+            guard let mainTargetUUID = await findMainTargetUUID(in: content, regexCache: regexCache) else {
                 throw IntegrationError.targetNotFound
             }
             
-            guard let buildPhaseUUID = findBuildPhaseUUID(
+            guard let buildPhaseUUID = await findBuildPhaseUUID(
                 in: content,
                 targetUUID: mainTargetUUID,
-                phaseName: file.fileType.buildPhase.rawValue
+                phaseName: file.fileType.buildPhase.rawValue,
+                regexCache: regexCache
             ) else {
                 throw IntegrationError.buildPhaseNotFound(file.fileType.buildPhase.rawValue)
             }
             
-            addToSpecificBuildPhase(
+            await addToSpecificBuildPhase(
                 buildUUID: buildUUID,
                 phaseUUID: buildPhaseUUID,
                 fileType: file.fileType.buildPhase.rawValue
             )
         }
         
-        private mutating func addToSpecificBuildPhase(buildUUID: String, phaseUUID: String, fileType: String) {
+        private mutating func addToSpecificBuildPhase(buildUUID: String, phaseUUID: String, fileType: String) async {
             let pattern = #"(\#(phaseUUID) /\* \#(fileType) \*/ = \{[^\}]*?files = \([^\)]*)(\);)"#
             let replacement = "$1\n\t\t\t\t\(buildUUID) /* \(fileType) file */,$2"
             
-            content = content.replacingOccurrences(
-                of: pattern,
-                with: replacement,
-                options: .regularExpression
-            )
+            do {
+                let regex = try await regexCache.regex(for: pattern)
+                let range = NSRange(content.startIndex..., in: content)
+                content = regex.stringByReplacingMatches(in: content, options: [], range: range, withTemplate: replacement)
+            } catch {
+                logger.error("Failed to add to specific build phase: \(error)")
+            }
         }
         
-        mutating func validateAndRepairFileIntegrity(_ file: FileToAdd) throws -> Bool {
+        mutating func validateAndRepairFileIntegrity(_ file: FileToAdd) async throws -> Bool {
             guard file.fileType == .localizableStrings || file.fileType == .stringsCatalog else {
                 return false // Solo para archivos de localización
             }
@@ -477,7 +552,7 @@ public struct XcodeIntegration: Sendable {
             let fileRefPattern = "([A-Fa-f0-9]{24}) /\\* \(NSRegularExpression.escapedPattern(for: file.fileName))[^\\*]* \\*/ = \\{[^}]*path = \(NSRegularExpression.escapedPattern(for: file.path))"
             
             do {
-                let regex = try NSRegularExpression(pattern: fileRefPattern, options: [])
+                let regex = try await regexCache.regex(for: fileRefPattern)
                 guard let match = regex.firstMatch(in: content, options: [], range: NSRange(content.startIndex..., in: content)),
                       match.numberOfRanges > 1,
                       let uuidRange = Range(match.range(at: 1), in: content) else {
@@ -488,11 +563,11 @@ public struct XcodeIntegration: Sendable {
                 let fileUUID = String(content[uuidRange])
                 
                 let buildPhasePattern = "\\* Resources \\*/ = \\{[\\s\\S]*?files = \\([\\s\\S]*?\(fileUUID)[\\s\\S]*?\\);"
-                let buildRegex = try NSRegularExpression(pattern: buildPhasePattern, options: [])
+                let buildRegex = try await regexCache.regex(for: buildPhasePattern)
                 
                 if buildRegex.firstMatch(in: content, options: [], range: NSRange(content.startIndex..., in: content)) == nil {
                     logger.info("Repairing Resources build phase for \(file.fileName)")
-                    content = ensureFileInResourcesBuildPhase(content, localizableStringsPath: file.path)
+                    content = await ensureFileInResourcesBuildPhase(content, localizableStringsPath: file.path, regexCache: regexCache)
                     return true
                 }
                 
@@ -513,7 +588,7 @@ public struct XcodeIntegration: Sendable {
     
     // MARK: - Project Structure Analysis
     
-    private static func findMainTargetUUID(in pbxproj: String) -> String? {
+    private static func findMainTargetUUID(in pbxproj: String, regexCache: RegexCache) async -> String? {
         let patterns = [
             #"targets = \(\s*([A-Fa-f0-9]{24})"#,
             #"targets = \(\s*([A-Fa-f0-9]{32})"#,
@@ -522,7 +597,7 @@ public struct XcodeIntegration: Sendable {
         
         for pattern in patterns {
             do {
-                let regex = try NSRegularExpression(pattern: pattern, options: [.caseInsensitive])
+                let regex = try await regexCache.regex(for: pattern, options: [.caseInsensitive])
                 if let match = regex.firstMatch(in: pbxproj, options: [], range: NSRange(pbxproj.startIndex..., in: pbxproj)),
                    match.numberOfRanges > 1,
                    let targetRange = Range(match.range(at: 1), in: pbxproj) {
@@ -537,11 +612,11 @@ public struct XcodeIntegration: Sendable {
         return nil
     }
     
-    private static func findBuildPhaseUUID(in pbxproj: String, targetUUID: String, phaseName: String) -> String? {
+    private static func findBuildPhaseUUID(in pbxproj: String, targetUUID: String, phaseName: String, regexCache: RegexCache) async -> String? {
         do {
             let targetPattern = #"\#(targetUUID) /\*.*\*/ = \{.*?buildPhases = \((.*?)\);"#
-            let nativeTargetRegex = try NSRegularExpression(
-                pattern: targetPattern,
+            let nativeTargetRegex = try await regexCache.regex(
+                for: targetPattern,
                 options: [.dotMatchesLineSeparators, .caseInsensitive]
             )
             
@@ -565,7 +640,7 @@ public struct XcodeIntegration: Sendable {
             ]
             
             for phasePattern in phasePatterns {
-                let phaseRegex = try NSRegularExpression(pattern: phasePattern, options: [.caseInsensitive])
+                let phaseRegex = try await regexCache.regex(for: phasePattern, options: [.caseInsensitive])
                 if let sMatch = phaseRegex.firstMatch(
                     in: buildPhases,
                     options: [],
@@ -587,28 +662,34 @@ public struct XcodeIntegration: Sendable {
     
     // MARK: - Content Insertion
     
-    private static func insertFileReferences(_ content: String, references: [String]) -> String {
+    private static func insertFileReferences(_ content: String, references: [String], regexCache: RegexCache) async -> String {
         let pattern = "(/* Begin PBXFileReference section */[\\s\\S]*?)(\\n/* End PBXFileReference section */)"
         let newReferencesString = references.joined(separator: "\n")
         let replacement = "$1\n\(newReferencesString)$2"
         
-        return content.replacingOccurrences(
-            of: pattern,
-            with: replacement,
-            options: .regularExpression
-        )
+        do {
+            let regex = try await regexCache.regex(for: pattern)
+            let range = NSRange(content.startIndex..., in: content)
+            return regex.stringByReplacingMatches(in: content, options: [], range: range, withTemplate: replacement)
+        } catch {
+            logger.error("Failed to insert file references: \(error)")
+            return content
+        }
     }
     
-    private static func insertBuildFileReferences(_ content: String, references: [String]) -> String {
+    private static func insertBuildFileReferences(_ content: String, references: [String], regexCache: RegexCache) async -> String {
         let pattern = "(/* Begin PBXBuildFile section */[\\s\\S]*?)(\\n/* End PBXBuildFile section */)"
         let newReferencesString = references.joined(separator: "\n")
         let replacement = "$1\n\(newReferencesString)$2"
         
-        return content.replacingOccurrences(
-            of: pattern,
-            with: replacement,
-            options: .regularExpression
-        )
+        do {
+            let regex = try await regexCache.regex(for: pattern)
+            let range = NSRange(content.startIndex..., in: content)
+            return regex.stringByReplacingMatches(in: content, options: [], range: range, withTemplate: replacement)
+        } catch {
+            logger.error("Failed to insert build file references: \(error)")
+            return content
+        }
     }
     
     // MARK: - Validation

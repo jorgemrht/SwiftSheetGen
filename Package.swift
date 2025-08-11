@@ -76,7 +76,8 @@ let package = Package(
             dependencies: [
                 "SheetLocalizer",
                 "CoreExtensions",
-                "XcodeIntegration"
+                "XcodeIntegration",
+                "SwiftSheetGenCLI"
             ]
         )
     ]

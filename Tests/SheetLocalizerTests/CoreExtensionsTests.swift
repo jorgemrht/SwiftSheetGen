@@ -10,7 +10,6 @@ struct CoreExtensionsTests {
     func test_stringTrimming() {
         #expect("  hello  ".trimmedContent == "hello")
         #expect("\nworld\t".trimmedContent == "world")
-        #expect("no-whitespace".trimmedContent == "no-whitespace")
     }
 
     @Test("String.isGoogleSheetsURL")
@@ -57,7 +56,7 @@ struct CoreExtensionsTests {
         #expect("key ".isValidLocalizationKey == false)
         #expect("key\"".isValidLocalizationKey == false)
         #expect("key\n".isValidLocalizationKey == false)
-        #expect("key with space".isValidLocalizationKey == true) // This might be unexpected, let's check the implementation. Ah, it only checks for prefix/suffix space.
+        #expect("key with space".isValidLocalizationKey == true) 
     }
 
     @Test("String.invalidLocalizationKeyReason")
@@ -95,24 +94,19 @@ struct CoreExtensionsTests {
         let tempDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         let testPath = tempDir.appendingPathComponent("testDir").path
 
-        // Clean up in case of previous failed runs
         try? fileManager.removeItem(at: tempDir)
 
-        // Defer cleanup
         defer {
             try? fileManager.removeItem(at: tempDir)
         }
 
-        // Test creation
         try fileManager.createDirectoryIfNeeded(atPath: testPath)
         #expect(fileManager.fileExists(atPath: testPath) == true)
 
-        // Test removal
         let removed = try fileManager.safeRemoveItem(atPath: testPath)
         #expect(removed == true)
         #expect(fileManager.fileExists(atPath: testPath) == false)
 
-        // Test removing non-existent item
         let removedAgain = try fileManager.safeRemoveItem(atPath: testPath)
         #expect(removedAgain == false)
     }

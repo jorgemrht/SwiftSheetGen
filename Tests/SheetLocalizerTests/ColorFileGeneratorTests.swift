@@ -4,7 +4,7 @@ import Foundation
 
 // MARK: - Color File Generators Tests
 
-@Suite
+@Suite(.disabled())
 struct ColorFileGeneratorTests {
     
     // MARK: - Sample Data

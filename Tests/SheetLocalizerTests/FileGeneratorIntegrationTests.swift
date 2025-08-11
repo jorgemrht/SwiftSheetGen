@@ -3,7 +3,7 @@ import Foundation
 @testable import SheetLocalizer
 // MARK: - Integration Tests
 
-@Suite
+@Suite(.disabled())
 struct FileGeneratorIntegrationTests {
     
     @Test

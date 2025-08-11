@@ -424,7 +424,8 @@ public struct LocalizationGenerator: Sendable {
         
         Self.logger.info("CSV file size: \(String(format: "%.2f", fileSizeInMB)) MB")
         
-        return try await CSVParser.parse(filePath: csvPath)
+        let content = try String(contentsOfFile: csvPath, encoding: .utf8)
+        return try CSVParser.parse(content)
     }
 
     // MARK: - Detect Tuist Project

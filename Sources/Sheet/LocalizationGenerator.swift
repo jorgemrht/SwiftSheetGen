@@ -49,10 +49,8 @@ public struct LocalizationGenerator: Sendable {
         
         // 4. Generate Localization Files
         if config.useStringsCatalog {
-            // Only generate strings catalog for modern localization
             try await generateStringsCatalog(languages: languages, entries: entries)
         } else {
-            // Generate .strings files and Swift enum
             let allKeys = Set(entries.map(\.key)).sorted()
             
             try await withThrowingTaskGroup(of: Void.self) { group in
@@ -274,10 +272,12 @@ public struct LocalizationGenerator: Sendable {
             .filter { $0.hasTranslation(for: language) }
             .sorted { $0.key < $1.key }
         
-        let content = validEntries.compactMap { entry -> String? in
+        var builder = StringBuilder(estimatedSize: validEntries.count * 50)
+        
+        for entry in validEntries {
             guard let translation = entry.translation(for: language) else {
                 Self.logger.warning("Skipping entry '\(entry.key)' for language '\(language)' due to missing translation.")
-                return nil
+                continue
             }
             
             let range = NSRange(translation.startIndex..<translation.endIndex, in: translation)
@@ -292,10 +292,15 @@ public struct LocalizationGenerator: Sendable {
                 .replacingOccurrences(of: "\"", with: "\\\"")
                 .replacingOccurrences(of: "\n", with: "\\n")
             
-                return "\"\(entry.key)\" = \"\(escaped)\";"
-        }.joined(separator: "\n")
-            
-        try content.write(toFile: filePath, atomically: true, encoding: .utf8)
+            builder.append("\"")
+            builder.append(entry.key)
+            builder.append("\" = \"")
+            builder.append(escaped)
+            builder.append("\";\n")
+        }
+        
+        let content = builder.build()
+        try content.write(toFile: filePath, atomically: true, encoding: String.Encoding.utf8)
 
         Self.logger.info("Generated: \(filePath) (\(validEntries.count) entries)")
     }

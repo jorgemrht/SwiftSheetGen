@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Strings Catalog Generator
 
-struct StringsCatalogGenerator {
+struct StringsCatalogGenerator: Sendable {
     
     static func generate(
         for entries: [LocalizationEntry],
@@ -29,16 +29,22 @@ struct StringsCatalogGenerator {
     ) -> StringsCatalog {
         
         var strings: [String: StringEntry] = [:]
+        strings.reserveCapacity(entries.count)
+        
+        let translatedStringUnit = StringUnit(state: "translated", value: "")
         
         for entry in entries {
+            let translationCount = entry.translations.count
             var localizations: [String: LocalizationValue] = [:]
+            localizations.reserveCapacity(translationCount)
             
             for (lang, value) in entry.translations {
-                localizations[lang] = LocalizationValue(stringUnit: .init(state: "translated", value: value))
+                let stringUnit = StringUnit(state: translatedStringUnit.state, value: value)
+                localizations[lang] = LocalizationValue(stringUnit: stringUnit)
             }
             
             strings[entry.key] = StringEntry(
-                comment: "", // TODO: Implement comment extraction from CSV
+                comment: nil,
                 localizations: localizations
             )
         }
@@ -53,26 +59,40 @@ struct StringsCatalogGenerator {
 
 // MARK: - Codable Structures for .xcstrings
 
-private struct StringsCatalog: Codable {
+private struct StringsCatalog: Codable, Sendable {
     let sourceLanguage: String
     let version: String
     let strings: [String: StringEntry]
 }
 
-private struct StringEntry: Codable {
+private struct StringEntry: Codable, Sendable {
     let comment: String?
-    var localizations: [String: LocalizationValue]
+    let localizations: [String: LocalizationValue]
+    
+    init(comment: String?, localizations: [String: LocalizationValue]) {
+        self.comment = comment
+        self.localizations = localizations
+    }
 }
 
-private struct LocalizationValue: Codable {
+private struct LocalizationValue: Codable, Sendable {
     let stringUnit: StringUnit
+    
+    init(stringUnit: StringUnit) {
+        self.stringUnit = stringUnit
+    }
     
     enum CodingKeys: String, CodingKey {
         case stringUnit
     }
 }
 
-private struct StringUnit: Codable {
+private struct StringUnit: Codable, Sendable {
     let state: String
     let value: String
+    
+    init(state: String, value: String) {
+        self.state = state
+        self.value = value
+    }
 }

@@ -15,8 +15,6 @@
 
 ---
 
-# SwiftSheetGen
-
 **SwiftSheetGen** is a command-line tool that transforms your team's collaborative Google Sheets for strings and colors into compile-time safe Swift code, eliminating manual errors and keeping your Xcode project in perfect sync.
 
 ## Overview
@@ -25,21 +23,13 @@ Manually managing localizable strings and design system colors is tedious and er
 
 SwiftSheetGen solves this by using a **Google Sheet as a single source of truth**. This allows designers, translators, and developers to collaborate in one place, while the tool automates the generation of type-safe Swift code that you can use with confidence.
 
-## Installation
+## Getting started
 
-### Homebrew (Recommended)
-```bash
-brew install jorgemrht/swiftSheetGen/swiftsheetgen
-```
+The easiest way to get started is to use the SwiftSheetGen command-line tool included with this package:
 
-Alternatively, you can first add the tap and then install the formula:
-```bash
-# 1. Add the tap (a repository of formulas)
-brew tap jorgemrht/swiftSheetGen
+1. Add the tap (a repository of formulas): **brew tap jorgemrht/swiftSheetGen**
 
-# 2. Install the tool
-brew install swiftsheetgen
-```
+2. Install the tool: **brew install swiftsheetgen**
 
 ### Updating
 To update to the latest version, simply run the upgrade command:
@@ -58,19 +48,21 @@ sudo cp .build/release/swiftsheetgen /usr/local/bin/
 
 ## Quick Start
 
-1.  **Install the tool** via Homebrew.
 
-2.  **Get your Google Sheet URL.** The sheet must be public ("Anyone with the link can view"). Here is a valid URL:
+1.  **Get your Google Sheet URL.** The sheet must be public. Here is a valid URL:
     -   Published to web URL: `https://docs.google.com/spreadsheets/d/e/1a2b3c4d5e6f7g8h9i0j.../pubhtml`
 
 3.  **Run the command:**
     ```bash
     # For localizations
     swiftsheetgen localization "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/export?format=csv"
-
+     ```
+     
+    ```bash
     # For colors
     swiftsheetgen colors "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/export?format=csv&gid=YOUR_GID"
     ```
+
     This will generate the necessary files in a new subdirectory (`./Localizables` or `./Colors`). That's it!
 
 

@@ -5,25 +5,10 @@ import Foundation
 @Suite()
 struct LocalizationGeneratorIntegrationTests {
 
-    private static let localizationCSV = """
-    "[Check]", "[View]", "[Item]", "[Type]", "es", "en", "fr"
-    "", "common", "app_name", "text", "jorgemrht", "My App", "Mon App"
-    "", "common", "language_code", "text", "es", "en", "fr"
-    "", "login", "title", "text", "Login", "Login", "Connexion"
-    "", "login", "username", "text", "Usuario", "Username", "Nom d'utilisateur"
-    "", "login", "password", "text", "Contraseña", "Password", "Mot de passe"
-    "", "login", "forgot_password", "button", "¿Contraseña olvidada?", "Forgot password?", "Mot de passe oublié?"
-    "", "login", "send", "button", "Iniciar sesión", "Sign in", "Se connecter"
-    "", "profile", "version", "text", "Versión {{version}} (Build {{build}})", "Version {{version}} (Build {{build}})", "Version {{version}} (Build {{build}})"
-    "", "profile", "user_count", "text", "{{count}} usuarios activos", "{{count}} active users", "{{count}} utilisateurs actifs"
-    "", "settings", "notifications", "text", "Notificaciones", "Notifications", "Notifications"
-    "[END]"
-    """
-
-    @Test("Generate succeeds with real downloaded CSV")
+    @Test
     func testGenerateWithValidCSV() async throws {
        
-        let csv = Self.localizationCSV
+        let csv = SharedTestData.localizationCSV
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         let csvPath = tempDir.appendingPathComponent("test.csv").path
@@ -62,7 +47,7 @@ struct LocalizationGeneratorIntegrationTests {
         }
     }
 
-    @Test("Throws on CSV with missing header")
+    @Test
     func testGenerateThrowsOnMissingHeader() async throws {
         let csv = """
         "", "common", "app_name", "text", "jorgemrht", "My App", "Mon App"
@@ -98,7 +83,7 @@ struct LocalizationGeneratorIntegrationTests {
         }
     }
 
-    @Test("Throws on CSV with insufficient rows")
+    @Test
     func testGenerateThrowsOnInsufficientRows() async throws {
         let csv = """
         "[Check]", "[View]", "[Item]", "[Type]", "es", "en", "fr"

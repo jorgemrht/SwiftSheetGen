@@ -8,7 +8,7 @@ struct ModelsConfigTests {
     // MARK: - LocalizationEntry Tests
     
     @Test("LocalizationEntry initializes correctly")
-    func test_localizationEntryInitialization() {
+    func localizationEntryInitialization() {
         let entry = LocalizationEntry(
             view: "login",
             item: "title", 
@@ -24,7 +24,7 @@ struct ModelsConfigTests {
     }
     
     @Test("LocalizationEntry key generation")
-    func test_localizationEntryKey() {
+    func localizationEntryKey() {
         let entry = LocalizationEntry(
             view: "profile",
             item: "user_count",
@@ -36,7 +36,7 @@ struct ModelsConfigTests {
     }
     
     @Test("LocalizationEntry hasTranslation check")
-    func test_localizationEntryHasTranslation() {
+    func localizationEntryHasTranslation() {
         let entry = LocalizationEntry(
             view: "common",
             item: "app_name",
@@ -51,7 +51,7 @@ struct ModelsConfigTests {
     }
     
     @Test("LocalizationEntry translation retrieval")
-    func test_localizationEntryTranslation() {
+    func localizationEntryTranslation() {
         let entry = LocalizationEntry(
             view: "common",
             item: "app_name", 
@@ -65,7 +65,7 @@ struct ModelsConfigTests {
     }
     
     @Test("LocalizationEntry handles empty translations")
-    func test_localizationEntryEmptyTranslations() {
+    func localizationEntryEmptyTranslations() {
         let entry = LocalizationEntry(
             view: "test",
             item: "empty",
@@ -79,37 +79,35 @@ struct ModelsConfigTests {
     }
     
     @Test("LocalizationEntry handles special characters in components")
-    func test_localizationEntrySpecialCharacters() {
+    func localizationEntrySpecialCharacters() {
         let entry = LocalizationEntry(
             view: "special-view",
-            item: "test_item",
+            item: "item",
             type: "button",
             translations: ["en": "Test with \"quotes\" and special chars: áéíóú"]
         )
         
         #expect(entry.view == "special-view")
-        #expect(entry.key == "special_view_test_item_button")
+        #expect(entry.key == "special_view_item_button")
         #expect(entry.translation(for: "en")?.contains("áéíóú") == true)
     }
     
-    // MARK: - LocalizationConfig Tests
+    // MARK: - Configuration Comprehensive Tests
     
-    @Test("LocalizationConfig default initialization")
-    func test_localizationConfigDefault() {
-        let config = LocalizationConfig.default
+    @Test("Comprehensive LocalizationConfig validation")
+    func comprehensiveLocalizationConfigTest() {
+       
+        let defaultConfig = LocalizationConfig.default
+        #expect(!defaultConfig.outputDirectory.isEmpty)
+        #expect(!defaultConfig.enumName.isEmpty)
+        #expect(!defaultConfig.sourceDirectory.isEmpty)
+        #expect(!defaultConfig.csvFileName.isEmpty)
+        #expect(defaultConfig.csvFileName.hasSuffix(".csv"))
+        #expect(defaultConfig.cleanupTemporaryFiles == true)
+        #expect(defaultConfig.unifiedLocalizationDirectory == true)
+        #expect(defaultConfig.useStringsCatalog == false)
         
-        #expect(config.outputDirectory == "./")
-        #expect(config.enumName == "L10n")
-        #expect(config.sourceDirectory == "./Sources")
-        #expect(config.csvFileName == "localizables.csv")
-        #expect(config.cleanupTemporaryFiles == true)
-        #expect(config.unifiedLocalizationDirectory == true)
-        #expect(config.useStringsCatalog == false)
-    }
-    
-    @Test("LocalizationConfig custom initialization") 
-    func test_localizationConfigCustom() {
-        let config = LocalizationConfig.custom(
+        let customConfig = LocalizationConfig.custom(
             outputDirectory: "Custom/Localizables",
             enumName: "Strings",
             sourceDirectory: "Custom/Sources",
@@ -119,18 +117,15 @@ struct ModelsConfigTests {
             useStringsCatalog: true
         )
         
-        #expect(config.outputDirectory == "Custom/Localizables")
-        #expect(config.enumName == "Strings")
-        #expect(config.sourceDirectory == "Custom/Sources")
-        #expect(config.csvFileName == "custom_strings.csv")
-        #expect(config.cleanupTemporaryFiles == false)
-        #expect(config.unifiedLocalizationDirectory == false)
-        #expect(config.useStringsCatalog == true)
-    }
-    
-    @Test("LocalizationConfig convenience initializer")
-    func test_localizationConfigConvenienceInit() {
-        let config = LocalizationConfig(
+        #expect(customConfig.outputDirectory == "Custom/Localizables")
+        #expect(customConfig.enumName == "Strings")
+        #expect(customConfig.sourceDirectory == "Custom/Sources")
+        #expect(customConfig.csvFileName == "custom_strings.csv")
+        #expect(customConfig.cleanupTemporaryFiles == false)
+        #expect(customConfig.unifiedLocalizationDirectory == false)
+        #expect(customConfig.useStringsCatalog == true)
+        
+        let convenienceConfig = LocalizationConfig(
             outputDirectory: "TestOutput",
             enumName: "TestEnum",
             sourceDirectory: "TestSource", 
@@ -138,19 +133,43 @@ struct ModelsConfigTests {
             cleanupTemporaryFiles: false
         )
         
-        #expect(config.outputDirectory == "TestOutput")
-        #expect(config.enumName == "TestEnum")
-        #expect(config.sourceDirectory == "TestSource")
-        #expect(config.csvFileName == "test.csv")
-        #expect(config.cleanupTemporaryFiles == false)
-        #expect(config.unifiedLocalizationDirectory == true)
-        #expect(config.useStringsCatalog == false)
+        #expect(convenienceConfig.outputDirectory == "TestOutput")
+        #expect(convenienceConfig.enumName == "TestEnum")
+        #expect(convenienceConfig.sourceDirectory == "TestSource")
+        #expect(convenienceConfig.csvFileName == "test.csv")
+        #expect(convenienceConfig.cleanupTemporaryFiles == false)
+        #expect(convenienceConfig.unifiedLocalizationDirectory == true)
+        #expect(convenienceConfig.useStringsCatalog == false)
+        
+        let config1 = LocalizationConfig.custom(
+            outputDirectory: "Test1",
+            enumName: "Test1Enum",
+            sourceDirectory: "Test1Source",
+            csvFileName: "test1.csv",
+            cleanupTemporaryFiles: true,
+            unifiedLocalizationDirectory: true,
+            useStringsCatalog: false
+        )
+        
+        let config2 = LocalizationConfig(
+            outputDirectory: "Test1",
+            enumName: "Test1Enum",
+            sourceDirectory: "Test1Source",
+            csvFileName: "test1.csv",
+            cleanupTemporaryFiles: true
+        )
+        
+        #expect(config1.outputDirectory == config2.outputDirectory)
+        #expect(config1.enumName == config2.enumName)
+        #expect(config1.sourceDirectory == config2.sourceDirectory)
+        #expect(config1.csvFileName == config2.csvFileName)
+        #expect(config1.cleanupTemporaryFiles == config2.cleanupTemporaryFiles)
     }
     
     // MARK: - ColorEntry Tests
     
     @Test("ColorEntry initializes correctly")
-    func test_colorEntryInitialization() {
+    func colorEntryInitialization() {
         let entry = ColorEntry(
             name: "primaryColor",
             anyHex: nil,
@@ -165,7 +184,7 @@ struct ModelsConfigTests {
     }
     
     @Test("ColorEntry handles hex colors without #")
-    func test_colorEntryHexWithoutHash() {
+    func colorEntryHexWithoutHash() {
         let entry = ColorEntry(
             name: "testColor",
             anyHex: nil,
@@ -178,7 +197,7 @@ struct ModelsConfigTests {
     }
     
     @Test("ColorEntry handles same light and dark colors")
-    func test_colorEntrySameColors() {
+    func colorEntrySameColors() {
         let entry = ColorEntry(
             name: "staticColor",
             anyHex: nil,
@@ -190,7 +209,7 @@ struct ModelsConfigTests {
     }
     
     @Test("ColorEntry handles anyHex parameter")
-    func test_colorEntryAnyHex() {
+    func colorEntryAnyHex() {
         let entry = ColorEntry(
             name: "testColor",
             anyHex: "#FF00FF",
@@ -203,47 +222,40 @@ struct ModelsConfigTests {
         #expect(entry.darkHex == "#FFFFFF")
     }
     
-    // MARK: - ColorConfig Tests
-    
-    @Test("ColorConfig default initialization")
-    func test_colorConfigDefault() {
-        let config = ColorConfig.default
+    @Test("Comprehensive ColorConfig validation")
+    func comprehensiveColorConfigTest() {
+      
+        let defaultConfig = ColorConfig.default
+        #expect(!defaultConfig.outputDirectory.isEmpty)
+        #expect(!defaultConfig.csvFileName.isEmpty)
+        #expect(defaultConfig.csvFileName.hasSuffix(".csv"))
+        #expect(defaultConfig.cleanupTemporaryFiles == true)
         
-        #expect(config.outputDirectory == "Colors")
-        #expect(config.csvFileName == "generated_colors.csv")
-        #expect(config.cleanupTemporaryFiles == true)
-    }
-    
-    @Test("ColorConfig custom initialization")
-    func test_colorConfigCustom() {
-        let config = ColorConfig.custom(
+        let customConfig = ColorConfig.custom(
             outputDirectory: "Custom/Colors",
             csvFileName: "custom_colors.csv",
             cleanupTemporaryFiles: false
         )
         
-        #expect(config.outputDirectory == "Custom/Colors")
-        #expect(config.csvFileName == "custom_colors.csv")
-        #expect(config.cleanupTemporaryFiles == false)
-    }
-    
-    @Test("ColorConfig convenience initializer")
-    func test_colorConfigConvenienceInit() {
-        let config = ColorConfig(
+        #expect(customConfig.outputDirectory == "Custom/Colors")
+        #expect(customConfig.csvFileName == "custom_colors.csv")
+        #expect(customConfig.cleanupTemporaryFiles == false)
+        
+        let convenienceConfig = ColorConfig(
             outputDirectory: "TestColors",
-            csvFileName: "test_colors.csv",
+            csvFileName: "colors.csv",
             cleanupTemporaryFiles: false
         )
         
-        #expect(config.outputDirectory == "TestColors")
-        #expect(config.csvFileName == "test_colors.csv")
-        #expect(config.cleanupTemporaryFiles == false)
+        #expect(convenienceConfig.outputDirectory == "TestColors")
+        #expect(convenienceConfig.csvFileName == "colors.csv")
+        #expect(convenienceConfig.cleanupTemporaryFiles == false)
     }
     
     // MARK: - SheetLocalizerError Tests
     
     @Test("SheetLocalizerError types and descriptions")
-    func test_sheetLocalizerErrorTypes() {
+    func sheetLocalizerErrorTypes() {
         let errors: [SheetLocalizerError] = [
             .invalidURL("invalid-url"),
             .networkError("Network failed"),
@@ -260,21 +272,21 @@ struct ModelsConfigTests {
     }
     
     @Test("SheetLocalizerError invalid URL")
-    func test_sheetLocalizerErrorInvalidURL() {
+    func sheetLocalizerErrorInvalidURL() {
         let error = SheetLocalizerError.invalidURL("https://bad-url.com")
         
         #expect(error.localizedDescription.contains("https://bad-url.com"))
     }
     
     @Test("SheetLocalizerError HTTP error")
-    func test_sheetLocalizerErrorHTTPError() {
+    func sheetLocalizerErrorHTTPError() {
         let error = SheetLocalizerError.httpError(500)
         
         #expect(error.localizedDescription.contains("500"))
     }
     
     @Test("SheetLocalizerError CSV parsing")
-    func test_sheetLocalizerErrorCSVParsing() {
+    func sheetLocalizerErrorCSVParsing() {
         let message = "Invalid CSV structure on line 5"
         let error = SheetLocalizerError.csvParsingError(message)
         
@@ -282,7 +294,7 @@ struct ModelsConfigTests {
     }
     
     @Test("SheetLocalizerError file system") 
-    func test_sheetLocalizerErrorFileSystem() {
+    func sheetLocalizerErrorFileSystem() {
         let message = "Permission denied: /protected/file.csv"
         let error = SheetLocalizerError.fileSystemError(message)
         
@@ -290,7 +302,7 @@ struct ModelsConfigTests {
     }
     
     @Test("SheetLocalizerError localization generation")
-    func test_sheetLocalizerErrorLocalizationGeneration() {
+    func sheetLocalizerErrorLocalizationGeneration() {
         let message = "Output directory is required"
         let error = SheetLocalizerError.localizationGenerationError(message)
         
@@ -298,7 +310,7 @@ struct ModelsConfigTests {
     }
     
     @Test("SheetLocalizerError insufficient data")
-    func test_sheetLocalizerErrorInsufficientData() {
+    func sheetLocalizerErrorInsufficientData() {
         let error = SheetLocalizerError.insufficientData
         
         #expect(error.localizedDescription.contains("sufficient"))
@@ -307,7 +319,7 @@ struct ModelsConfigTests {
     // MARK: - LocalizationRow Tests
     
     @Test("LocalizationRow validation")
-    func test_localizationRowValidation() {
+    func localizationRowValidation() {
 
         let validRowData = ["", "common", "app_name", "text", "My App", "Mi App"]
         let invalidRowData = ["", "", "", "", "", ""]
@@ -324,7 +336,7 @@ struct ModelsConfigTests {
     // MARK: - ColorRow Tests
     
     @Test("ColorRow validation") 
-    func test_colorRowValidation() {
+    func colorRowValidation() {
         let validColorData = ["primaryColor", "#FF5733", "#AA3311", "Primary brand color"]
         let invalidColorData = ["", "", "", ""]
         

@@ -5,8 +5,8 @@ import Foundation
 @Suite
 struct ColorGeneratorTests {
     
-    @Test
-    func generateThrowsErrorForNonExistentFile() async {
+    @Test("ColorGenerator throws appropriate error when attempting to process non-existent CSV files")
+    func colorGeneratorNonExistentFileHandling() async {
         let generator = ColorGenerator()
         
         await #expect(throws: (any Error).self) {
@@ -14,8 +14,8 @@ struct ColorGeneratorTests {
         }
     }
     
-    @Test
-    func generateThrowsErrorForInvalidCSV() async {
+    @Test("ColorGenerator rejects CSV files with invalid header structure for color generation")
+    func colorGeneratorInvalidCSVHeaderRejection() async {
         let invalidCSV = """
         invalid,csv,data
         no,header,found
@@ -31,8 +31,8 @@ struct ColorGeneratorTests {
         }
     }
     
-    @Test
-    func generateThrowsErrorForInsufficientData() async {
+    @Test("ColorGenerator validates CSV content and rejects files with headers but no color data")
+    func colorGeneratorInsufficientDataValidation() async {
         let insufficientCSV = """
         Check,[Color Name],[Any Hex Value],[Light Hex Value],[Dark Hex Value],[Desc]
         """
@@ -47,8 +47,8 @@ struct ColorGeneratorTests {
         }
     }
     
-    @Test
-    func generateSucceedsWithValidCSV() async throws {
+    @Test("ColorGenerator successfully processes valid CSV data and generates SwiftUI color extensions")
+    func colorGeneratorValidCSVProcessingAndFileGeneration() async throws {
         let tempDir = SharedTestData.createTempDirectory()
         defer { try? FileManager.default.removeItem(at: tempDir) }
         
@@ -66,24 +66,23 @@ struct ColorGeneratorTests {
         let colorsFile = tempDir.appendingPathComponent("Colors.swift")
         let colorDynamicFile = tempDir.appendingPathComponent("Color+Dynamic.swift")
         
-        #expect(FileManager.default.fileExists(atPath: colorsFile.path))
-        #expect(FileManager.default.fileExists(atPath: colorDynamicFile.path))
+        #expect(FileManager.default.fileExists(atPath: colorsFile.path), "Colors.swift file should be generated")
+        #expect(FileManager.default.fileExists(atPath: colorDynamicFile.path), "Color+Dynamic.swift file should be generated")
         
         let colorsContent = try String(contentsOf: colorsFile, encoding: .utf8)
         let dynamicContent = try String(contentsOf: colorDynamicFile, encoding: .utf8)
         
-        #expect(colorsContent.contains("import SwiftUI"))
-        #expect(colorsContent.contains("extension Color"))
-        #expect(colorsContent.contains("primaryBackgroundColor"))
+        #expect(colorsContent.contains("import SwiftUI"), "Generated colors file should import SwiftUI")
+        #expect(colorsContent.contains("extension Color"), "Generated colors should extend Color")
+        #expect(colorsContent.contains("primaryBackgroundColor"), "Color definitions from CSV should be included")
         
-        #expect(dynamicContent.contains("import SwiftUI"))
-        #expect(dynamicContent.contains("extension Color"))
-
-        #expect(dynamicContent.contains("init(light:") || dynamicContent.contains("userInterfaceStyle"))
+        #expect(dynamicContent.contains("import SwiftUI"), "Dynamic color extensions should import SwiftUI")
+        #expect(dynamicContent.contains("extension Color"), "Dynamic colors should extend Color")
+        #expect(dynamicContent.contains("init(light:") || dynamicContent.contains("userInterfaceStyle"), "Dynamic colors should support light/dark mode functionality")
     }
     
-    @Test
-    func generateHandlesEmptyColorEntries() async {
+    @Test("ColorGenerator appropriately handles CSV files with no valid color entries")
+    func colorGeneratorEmptyColorEntriesHandling() async {
         let csvWithNoValidEntries = """
         Items a revisar,,,,,Desc
         Check,[Color Name],[Any Hex Value],[Light Hex Value],[Dark Hex Value],[Desc]
@@ -101,8 +100,8 @@ struct ColorGeneratorTests {
         }
     }
     
-    @Test
-    func generateSkipsRowsWithEmptyNames() async throws {
+    @Test("ColorGenerator intelligently filters out invalid rows while preserving valid color definitions")
+    func colorGeneratorSelectiveRowProcessing() async throws {
         let csvWithEmptyNames = """
         Items a revisar,,,,,Desc
         Check,[Color Name],[Any Hex Value],[Light Hex Value],[Dark Hex Value],[Desc]
@@ -130,8 +129,8 @@ struct ColorGeneratorTests {
         let colorsFile = tempDir.appendingPathComponent("Colors.swift")
         let content = try String(contentsOf: colorsFile, encoding: .utf8)
         
-        #expect(content.contains("primaryBackgroundColor"))
-        #expect(content.contains("validColor"))
-        #expect(!content.contains("Invalid empty name"))
+        #expect(content.contains("primaryBackgroundColor"), "Valid color entries should be included in generated code")
+        #expect(content.contains("validColor"), "All valid color names should be processed")
+        #expect(!content.contains("Invalid empty name"), "Rows with empty names should be excluded from generated code")
     }
 }

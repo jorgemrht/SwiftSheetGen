@@ -23,16 +23,26 @@ struct ModelsConfigTests {
         #expect(entry.translations["es"] == "Iniciar sesión")
     }
     
-    @Test("LocalizationEntry key generation")
-    func localizationEntryKey() {
+    @Test("LocalizationEntry key generation basic cases",
+          arguments: [
+              ("profile", "user_count", "button", "profile_user_count_button"),
+              ("common", "cancel", "action", "common_cancel_action"),
+              ("login", "forgot_password", "link", "login_forgot_password_link")
+          ])
+    func localizationEntryKey(
+        view: String,
+        item: String,
+        type: String, 
+        expectedKey: String
+    ) {
         let entry = LocalizationEntry(
-            view: "profile",
-            item: "user_count",
-            type: "button",
-            translations: ["en": "Users"]
+            view: view,
+            item: item,
+            type: type,
+            translations: ["en": "Test"]
         )
         
-        #expect(entry.key == "profile_user_count_button")
+        #expect(entry.key == expectedKey)
     }
     
     @Test("LocalizationEntry hasTranslation check")

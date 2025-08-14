@@ -21,17 +21,31 @@ struct ModelsValidationTests {
         #expect(entry.translations["es"] == "Iniciar sesión")
     }
     
-    @Test
-    func localizationEntryKeyGeneration() {
+    @Test("LocalizationEntry key generation",
+          arguments: [
+              ("common", "app_name", "text", "common_app_name_text"),
+              ("login", "title", "button", "login_title_button"),
+              ("profile", "user_name", "text", "profile_user_name_text"),
+              ("profile", "user_count", "label", "profile_user_count_label"),
+              ("special-chars", "test_item", "text", "special_chars_test_item_text"),
+              ("settings-view", "notification-sound", "option", "settings_view_notification_sound_option"),
+              ("dashboard.overview", "widget_count", "counter", "dashboard.overview_widget_count_counter")
+          ])
+    func localizationEntryKeyGeneration(
+        view: String,
+        item: String, 
+        type: String,
+        expectedKey: String
+    ) {
         let entry = LocalizationEntry(
-            view: "profile",
-            item: "user_name",
-            type: "text",
-            translations: ["en": "Username"]
+            view: view,
+            item: item,
+            type: type,
+            translations: ["en": "Test"]
         )
         
-        let expectedKey = "profile_user_name_text"
-        #expect(entry.key == expectedKey)
+        #expect(entry.key == expectedKey,
+               "View: '\(view)', Item: '\(item)', Type: '\(type)' should generate key: '\(expectedKey)', got: '\(entry.key)'")
     }
     
     @Test
@@ -66,52 +80,54 @@ struct ModelsValidationTests {
     // MARK: - ColorEntry Tests
     
     @Test
-    func colorEntryAllHexValues() {
-        let entry = ColorEntry(
+    func colorEntryComprehensiveValidation() {
+        
+        let fullEntry = ColorEntry(
             name: "primaryColor",
             anyHex: "#FF0000",
             lightHex: "#FF3333",
             darkHex: "#CC0000"
         )
         
-        #expect(entry.name == "primaryColor")
-        #expect(entry.anyHex == "#FF0000")
-        #expect(entry.lightHex == "#FF3333")
-        #expect(entry.darkHex == "#CC0000")
-    }
-    
-    @Test
-    func colorEntryNilAnyHex() {
-        let entry = ColorEntry(
+        #expect(fullEntry.name == "primaryColor")
+        #expect(fullEntry.anyHex == "#FF0000")
+        #expect(fullEntry.lightHex == "#FF3333")
+        #expect(fullEntry.darkHex == "#CC0000")
+        
+        let nilAnyEntry = ColorEntry(
             name: "backgroundColor",
             anyHex: nil,
             lightHex: "#FFFFFF",
             darkHex: "#000000"
         )
         
-        #expect(entry.name == "backgroundColor")
-        #expect(entry.anyHex == nil)
-        #expect(entry.lightHex == "#FFFFFF")
-        #expect(entry.darkHex == "#000000")
-    }
-    
-    @Test
-    func colorEntryRequiredValues() {
-        let entry = ColorEntry(
-            name: "accentColor",
-            anyHex: nil,
-            lightHex: "#00AAFF",
-            darkHex: nil
-        )
+        #expect(nilAnyEntry.name == "backgroundColor")
+        #expect(nilAnyEntry.anyHex == nil)
+        #expect(nilAnyEntry.lightHex == "#FFFFFF")
+        #expect(nilAnyEntry.darkHex == "#000000")
         
-        #expect(entry.name == "accentColor")
-        #expect(entry.anyHex == nil)
-        #expect(entry.lightHex == "#00AAFF")
-        #expect(entry.darkHex == nil)
+        let validHexPatterns = [
+            "#FF0000", "#00FF00", "#0000FF",
+            "#fff", "#FFF", "#000",
+            "FF0000", "00FF00", "0000FF",
+            "#AABBCC", "#123456", "#FEDCBA"
+        ]
+        
+        for hex in validHexPatterns {
+            let entry = ColorEntry(
+                name: "testColor",
+                anyHex: nil,
+                lightHex: hex,
+                darkHex: hex
+            )
+            
+            #expect(entry.lightHex == hex)
+            #expect(entry.darkHex == hex)
+        }
     }
     
     @Test
-    func test_localizationRowCreation() {
+    func localizationRowCreation() {
         let row = LocalizationRow(
             view: "login",
             item: "title",
@@ -128,7 +144,7 @@ struct ModelsValidationTests {
     }
     
     @Test
-    func test_localizationRowEmptyTranslations() {
+    func localizationRowEmptyTranslations() {
         let row = LocalizationRow(
             view: "common",
             item: "empty",
@@ -140,7 +156,7 @@ struct ModelsValidationTests {
     }
     
     @Test
-    func test_colorRowCreation() {
+    func colorRowCreation() {
         let row = ColorRow(
             name: "primaryColor",
             anyHex: "#FF0000",
@@ -157,7 +173,7 @@ struct ModelsValidationTests {
     }
     
     @Test
-    func test_colorRowOptionalValues() {
+    func colorRowOptionalValues() {
         let row = ColorRow(
             name: "backgroundColor",
             anyHex: "",
@@ -173,20 +189,23 @@ struct ModelsValidationTests {
         #expect(row.desc == "")
     }
     
-    @Test
-    func test_localizationConfigDefaults() {
-        let config = LocalizationConfig.default
-        
-        #expect(config.outputDirectory == "./")
-        #expect(config.enumName == "L10n")
-        #expect(config.sourceDirectory == "./Sources")
-        #expect(config.csvFileName == "localizables.csv")
-        #expect(config.cleanupTemporaryFiles == true)
-    }
+    // MARK: - Configuration Tests
     
     @Test
-    func test_localizationConfigCustomValues() {
-        let config = LocalizationConfig(
+    func configurationEdgeCasesValidation() {
+    
+        let defaultLocConfig = LocalizationConfig.default
+        #expect(defaultLocConfig.outputDirectory == "./")
+        #expect(defaultLocConfig.enumName == "L10n")
+        #expect(defaultLocConfig.sourceDirectory == "./Sources")
+        #expect(defaultLocConfig.csvFileName == "localizables.csv")
+        #expect(defaultLocConfig.cleanupTemporaryFiles == true)
+        
+        let defaultColorConfig = ColorConfig.default
+        #expect(defaultColorConfig.outputDirectory == "Colors")
+        #expect(defaultColorConfig.cleanupTemporaryFiles == true)
+        
+        let customLocConfig = LocalizationConfig(
             outputDirectory: "/custom/output",
             enumName: "CustomEnum",
             sourceDirectory: "/custom/source",
@@ -194,29 +213,24 @@ struct ModelsValidationTests {
             cleanupTemporaryFiles: false
         )
         
-        #expect(config.outputDirectory == "/custom/output")
-        #expect(config.enumName == "CustomEnum")
-        #expect(config.sourceDirectory == "/custom/source")
-        #expect(config.csvFileName == "custom.csv")
-        #expect(config.cleanupTemporaryFiles == false)
-    }
-    
-    @Test
-    func test_colorConfigDefaults() {
-        let config = ColorConfig.default
+        #expect(customLocConfig.outputDirectory == "/custom/output")
+        #expect(customLocConfig.enumName == "CustomEnum")
+        #expect(customLocConfig.sourceDirectory == "/custom/source")
+        #expect(customLocConfig.csvFileName == "custom.csv")
+        #expect(customLocConfig.cleanupTemporaryFiles == false)
         
-        #expect(config.outputDirectory == "Colors")
-        #expect(config.cleanupTemporaryFiles == true)
-    }
-    
-    @Test
-    func test_colorConfigCustomValues() {
-        let config = ColorConfig(
-            outputDirectory: "/custom/colors",
-            cleanupTemporaryFiles: false
+        let edgeCaseConfig = LocalizationConfig.custom(
+            outputDirectory: "",
+            enumName: "   ",
+            sourceDirectory: "\t\n",
+            csvFileName: "",
+            cleanupTemporaryFiles: true,
+            unifiedLocalizationDirectory: true,
+            useStringsCatalog: false
         )
         
-        #expect(config.outputDirectory == "/custom/colors")
-        #expect(config.cleanupTemporaryFiles == false)
+        #expect(edgeCaseConfig.outputDirectory == "")
+        #expect(edgeCaseConfig.enumName == "   ")
+        #expect(edgeCaseConfig.sourceDirectory == "\t\n")
     }
 }

@@ -5,9 +5,8 @@ import Foundation
 @Suite
 struct PerformanceTests {
    
-    @Test
-    func csvParserPerformanceWithLargeFiles() async throws {
-        
+    @Test("CSV parser maintains efficient performance when processing large datasets with thousands of rows")
+    func csvParserLargeFilePerformanceBenchmark() async throws {
         var largeCsvContent = "Check,[View],[Item],[Type],es,en,fr\n"
         
         for i in 1...10000 {
@@ -30,8 +29,8 @@ struct PerformanceTests {
         print("Processed \(result.count) rows in \(processingTime)s (\(Int(Double(result.count) / processingTime)) rows/sec)")
     }
     
-    @Test
-    func streamingParserMemoryEfficiency() async throws {
+    @Test("Streaming CSV parser efficiently handles very large files while maintaining memory constraints")
+    func streamingParserMemoryEfficiencyValidation() async throws {
         var largeCsvContent = "Check,[View],[Item],[Type],es,en,fr\n"
         
         for i in 1...50000 {
@@ -53,8 +52,8 @@ struct PerformanceTests {
         print("Streamed \(result.count) rows in \(processingTime)s")
     }
     
-    @Test
-    func stringBuilderPerformanceWithLargeContent() {
+    @Test("StringBuilder demonstrates optimal performance characteristics for large content generation")
+    func stringBuilderLargeContentPerformanceBenchmark() {
         let iterations = 10000
         let testString = "This is a test string that will be appended many times. "
         
@@ -75,9 +74,8 @@ struct PerformanceTests {
         print("Built \(result.count) character string in \(buildTime)s")
     }
     
-    @Test
-    func colorFileGenerationPerformance() throws {
-        
+    @Test("Color file generator maintains high performance when generating large color definition files")
+    func colorFileGenerationPerformanceBenchmark() throws {
         var colorEntries: [ColorEntry] = []
         colorEntries.reserveCapacity(5000)
         
@@ -107,8 +105,8 @@ struct PerformanceTests {
     }
     
     
-    @Test
-    func concurrentCSVParsing() async throws {
+    @Test("CSV parser supports efficient concurrent parsing of multiple files simultaneously")
+    func concurrentCSVParsingPerformanceValidation() async throws {
         let csvCount = 10
         var csvFiles: [URL] = []
         defer {

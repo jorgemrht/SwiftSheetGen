@@ -2,44 +2,40 @@ import Testing
 import Foundation
 @testable import SheetLocalizer
 
-@Suite
+@Suite("CSV Downloader Tests")
 struct CSVDownloaderTests {
     
-    @Test
-    func initDefaultTimeout() async {
-        let downloader = CSVDownloader()
-        #expect(String(describing: type(of: downloader)) == "CSVDownloader")
-    }
-    
-    @Test
-    func validateEmptyURL() async {
+    @Test("CSVDownloader properly validates empty URLs as invalid")
+    func csvDownloaderEmptyURLValidation() async {
         let downloader = CSVDownloader()
         
         let isValid = await downloader.validateURL("")
-        #expect(isValid == false)
+        #expect(isValid == false, "Empty URL should be rejected as invalid")
     }
     
-    @Test(arguments: [
-        "https://docs.google.com/spreadsheets/d/e/2PACX-1vRj3aWiQffPzhrWzu1E8B14_3YiqQ_uwh3K0yVANXJuUpCS3fJ523VIu3VDNyRnXQ5jCWeN3AL9XX0a/pubhtml",
-        "https://docs.google.com/spreadsheets/d/e/2PACX-1vRj3aWiQffPzhrWzu1E8B14_3YiqQ_uwh3K0yVANXJuUpCS3fJ523VIu3VDNyRnXQ5jCWeN3AL9XX0a/pub?output=csv"
-    ])
-    func isValidGoogleSheetURL(url: String) {
-        #expect(CSVDownloader.isValidGoogleSheetURL(url))
+    @Test("CSVDownloader correctly identifies valid Google Sheets URLs in various formats",
+          arguments: [
+              "https://docs.google.com/spreadsheets/d/e/2PACX-1vRj3aWiQffPzhrWzu1E8B14_3YiqQ_uwh3K0yVANXJuUpCS3fJ523VIu3VDNyRnXQ5jCWeN3AL9XX0a/pubhtml",
+              "https://docs.google.com/spreadsheets/d/e/2PACX-1vRj3aWiQffPzhrWzu1E8B14_3YiqQ_uwh3K0yVANXJuUpCS3fJ523VIu3VDNyRnXQ5jCWeN3AL9XX0a/pub?output=csv"
+          ])
+    func csvDownloaderValidGoogleSheetsURLRecognition(url: String) {
+        #expect(CSVDownloader.isValidGoogleSheetURL(url), "URL '\(url)' should be recognized as valid Google Sheets URL")
     }
     
-    @Test(arguments: [
-        "https://google.com",
-        "https://docs.google.com/documents/d/123/edit",
-        "https://sheets.google.com/invalid"
-    ])
-    func isInvalidGoogleSheetURL(url: String) {
-        #expect(!CSVDownloader.isValidGoogleSheetURL(url))
+    @Test("CSVDownloader correctly rejects invalid or non-Google Sheets URLs",
+          arguments: [
+              "https://google.com",
+              "https://docs.google.com/documents/d/123/edit",
+              "https://sheets.google.com/invalid"
+          ])
+    func csvDownloaderInvalidGoogleSheetsURLRejection(url: String) {
+        #expect(!CSVDownloader.isValidGoogleSheetURL(url), "URL '\(url)' should be rejected as invalid Google Sheets URL")
     }
     
     // MARK: - Input Validation Tests (No Network Calls)
     
-    @Test
-    func downloadValidatesEmptyURL() async {
+    @Test("CSVDownloader validates input parameters and rejects empty URLs")
+    func csvDownloaderEmptyURLInputValidation() async {
         let downloader = CSVDownloader()
         let tempDir = SharedTestData.createTempDirectory()
         let outputPath = tempDir.appendingPathComponent("output.csv").path
@@ -49,8 +45,8 @@ struct CSVDownloaderTests {
         }
     }
     
-    @Test
-    func downloadValidatesEmptyOutputPath() async {
+    @Test("CSVDownloader validates output path parameters and rejects empty paths")
+    func csvDownloaderEmptyOutputPathValidation() async {
         let downloader = CSVDownloader()
         let validURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRj3aWiQffPzhrWzu1E8B14_3YiqQ_uwh3K0yVANXJuUpCS3fJ523VIu3VDNyRnXQ5jCWeN3AL9XX0a/pubhtml"
         

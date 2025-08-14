@@ -5,27 +5,27 @@ import Foundation
 @Suite
 struct StringBuilderTests {
     
-    @Test
-    func initEmpty() {
+    @Test("StringBuilder initializes with empty content by default")
+    func stringBuilderDefaultInitialization() {
         let builder = StringBuilder()
         #expect(builder.build() == "")
     }
     
-    @Test
-    func initWithEstimatedSize() {
+    @Test("StringBuilder initializes with estimated size optimization without affecting output")
+    func stringBuilderEstimatedSizeInitialization() {
         let builder = StringBuilder(estimatedSize: 100)
         #expect(builder.build() == "")
     }
     
-    @Test
-    func appendString() {
+    @Test("StringBuilder appends single strings correctly and maintains content integrity")
+    func stringBuilderBasicStringAppend() {
         var builder = StringBuilder()
         builder.append("Hello")
         #expect(builder.build() == "Hello")
     }
     
-    @Test
-    func appendMultipleStrings() {
+    @Test("StringBuilder concatenates multiple strings in correct order")
+    func stringBuilderMultipleStringConcatenation() {
         var builder = StringBuilder()
         builder.append("Hello")
         builder.append(" ")
@@ -33,16 +33,16 @@ struct StringBuilderTests {
         #expect(builder.build() == "Hello World")
     }
     
-    @Test
-    func appendCharacter() {
+    @Test("StringBuilder handles character appending for building complex strings")
+    func stringBuilderCharacterAppendSupport() {
         var builder = StringBuilder()
         builder.append("Hello")
         builder.append("!")
         #expect(builder.build() == "Hello!")
     }
     
-    @Test
-    func withNewlines() {
+    @Test("StringBuilder preserves newline characters for multi-line content generation")
+    func stringBuilderNewlinePreservation() {
         var builder = StringBuilder()
         builder.append("Line 1")
         builder.append("\n")
@@ -51,8 +51,8 @@ struct StringBuilderTests {
         #expect(builder.build() == "Line 1\nLine 2\n")
     }
     
-    @Test
-    func performanceWithLargeContent() {
+    @Test("StringBuilder maintains performance and accuracy with large content generation")
+    func stringBuilderLargeContentPerformanceValidation() {
         var builder = StringBuilder(estimatedSize: 10000)
         
         for i in 0..<1000 {
@@ -65,8 +65,8 @@ struct StringBuilderTests {
         #expect(result.contains("Line 500"))
     }
     
-    @Test
-    func specialCharacters() {
+    @Test("StringBuilder correctly handles special characters, Unicode, and quotes")
+    func stringBuilderSpecialCharacterHandling() {
         var builder = StringBuilder()
         builder.append("Special chars: áéíóú ñ 🚀")
         builder.append(" with emoji\n")
@@ -79,8 +79,8 @@ struct StringBuilderTests {
         #expect(result.contains("'World'"))
     }
     
-    @Test
-    func tabsAndIndentation() {
+    @Test("StringBuilder preserves tab characters and indentation for code generation")
+    func stringBuilderTabAndIndentationPreservation() {
         var builder = StringBuilder()
         builder.append("public class Test {\n")
         builder.append("\tpublic func method() {\n")
@@ -93,8 +93,8 @@ struct StringBuilderTests {
         #expect(result.contains("\t\treturn"))
     }
     
-    @Test
-    func emptyBuild() {
+    @Test("StringBuilder build method returns empty string for unused instances")
+    func stringBuilderEmptyBuildValidation() {
         let builder = StringBuilder()
         #expect(builder.build().isEmpty)
     }

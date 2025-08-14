@@ -7,8 +7,8 @@ import Foundation
 @Suite
 struct CSVParserConfigurationTests {
     
-    @Test
-    func test_streamingConfigDefaults() {
+    @Test("Default streaming configuration provides balanced memory and performance settings")
+    func defaultStreamingConfigurationValidation() {
         let config = CSVParser.StreamingConfig.default
         
         #expect(config.bufferSize == 16384)
@@ -17,8 +17,8 @@ struct CSVParserConfigurationTests {
         #expect(config.logProgressInterval == 10)
     }
     
-    @Test
-    func test_streamingConfigHighPerformance() {
+    @Test("High performance streaming configuration maximizes throughput for large datasets")
+    func highPerformanceStreamingConfigurationValidation() {
         let config = CSVParser.StreamingConfig.highPerformance
         
         #expect(config.bufferSize == 128 * 1024)
@@ -27,8 +27,8 @@ struct CSVParserConfigurationTests {
         #expect(config.logProgressInterval == 5)
     }
     
-    @Test
-    func test_streamingConfigMemoryConstrained() {
+    @Test("Memory constrained streaming configuration minimizes memory usage for resource-limited environments")
+    func memoryConstrainedStreamingConfigurationValidation() {
         let config = CSVParser.StreamingConfig.memoryConstrained
         
         #expect(config.bufferSize == 8192)

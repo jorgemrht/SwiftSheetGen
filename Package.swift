@@ -55,18 +55,28 @@ let package = Package(
             path: "Sources/Sheet"
         ),
         
-        // MARK: - CLI Executable
-        .executableTarget(
-            name: "SwiftSheetGenCLI",
+        // MARK: - CLI Logic Library
+        .target(
+            name: "SwiftSheetGenCLICore",
             dependencies: [
                 "SheetLocalizer",
                 "CoreExtensions",
                 "XcodeIntegration",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
+            path: "Sources/SwiftSheetGenCLICore"
+        ),
+        
+        // MARK: - CLI Executable
+        .executableTarget(
+            name: "SwiftSheetGenCLI",
+            dependencies: [
+                "SwiftSheetGenCLICore",
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ],
             path: "Sources/SwiftSheetGenCLI",
             swiftSettings: [
-                .unsafeFlags(["-DSWIFTSHEETGEN_VERSION=\\\"\(versionString)\\\""])
+                .unsafeFlags(["-DSWIFTSHEETGEN_VERSION=\"\(versionString)\""])
             ]
         ),
         
@@ -77,7 +87,7 @@ let package = Package(
                 "SheetLocalizer",
                 "CoreExtensions",
                 "XcodeIntegration",
-                "SwiftSheetGenCLI"
+                "SwiftSheetGenCLICore"
             ]
         )
     ]

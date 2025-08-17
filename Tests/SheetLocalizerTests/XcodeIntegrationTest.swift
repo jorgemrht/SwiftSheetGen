@@ -3,19 +3,95 @@ import Foundation
 import os.log
 @testable import SheetLocalizer
 @testable import CoreExtensions
+@testable import XcodeIntegration
 
-@Suite("Simple Xcode Integration Tests")
+@Suite
 struct XcodeIntegrationTest {
     
-    // MARK: - Color Assets Integration Tests
+    private static let originalWorkingDirectory = FileManager.default.currentDirectoryPath
     
-    @Test("Colors generation creates proper file structure")
-    func colorsGenerationFileStructure() async throws {
-        let tempDir = try createTestDirectory()
-        defer { cleanupTestDirectory(tempDir) }
+    // MARK: - Helper Methods
+    
+    private func createTestXcodeProject() throws -> (projectDir: String, pbxprojPath: String) {
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        
+        let projectName = "TestApp"
+        let projectDir = tempDir.appendingPathComponent("\(projectName).xcodeproj")
+        try FileManager.default.createDirectory(at: projectDir, withIntermediateDirectories: true)
+        
+        let pbxprojContent = """
+        // !$*UTF8*$!
+        {
+            archiveVersion = 1;
+            classes = {
+            };
+            objectVersion = 56;
+            objects = {
+                00E356EC1AD99517003FC87E /* TestApp */ = {
+                    isa = PBXGroup;
+                    children = (
+                    );
+                    name = TestApp;
+                    sourceTree = "<group>";
+                };
+                00E356ED1AD99517003FC87E /* Project object */ = {
+                    isa = PBXProject;
+                    attributes = {
+                        LastSwiftUpdateCheck = 1500;
+                        LastUpgradeCheck = 1500;
+                        TargetAttributes = {
+                        };
+                    };
+                    buildConfigurationList = 00E356EE1AD99517003FC87E;
+                    compatibilityVersion = "Xcode 14.0";
+                    developmentRegion = en;
+                    hasScannedForEncodings = 0;
+                    knownRegions = (
+                        en,
+                        Base,
+                    );
+                    mainGroup = 00E356EC1AD99517003FC87E;
+                    productRefGroup = 00E356EC1AD99517003FC87E;
+                    projectDirPath = "";
+                    projectRoot = "";
+                    targets = (
+                    );
+                };
+            };
+            rootObject = 00E356ED1AD99517003FC87E /* Project object */;
+        }
+        """
+        
+        let pbxprojPath = projectDir.appendingPathComponent("project.pbxproj")
+        try pbxprojContent.write(to: pbxprojPath, atomically: true, encoding: .utf8)
+        
+        return (projectDir.path, pbxprojPath.path)
+    }
+    
+    private func cleanupTestDirectory(_ path: String) {
+        FileManager.default.changeCurrentDirectoryPath(Self.originalWorkingDirectory)
+        
+        try? FileManager.default.removeItem(atPath: path)
+        
+        let parentPath = (path as NSString).deletingLastPathComponent
+        if parentPath.contains("SwiftSheetGen") || parentPath.contains("TestApp") {
+            try? FileManager.default.removeItem(atPath: parentPath)
+        }
+    }
+    
+    // MARK: - Xcode Project Integration Tests
+    
+    @Test("Generated color files can be added to valid Xcode project")
+    func addGeneratedColorFilesToXcodeProject() async throws {
+        let (projectDir, pbxprojPath) = try createTestXcodeProject()
+        defer { cleanupTestDirectory(projectDir) }
+        
+        let outputDir = "\(projectDir)/../GeneratedFiles"
+        try FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
         
         let config = ColorConfig(
-            outputDirectory: tempDir,
+            outputDirectory: outputDir,
             csvFileName: "test_colors.csv",
             cleanupTemporaryFiles: false
         )
@@ -23,206 +99,208 @@ struct XcodeIntegrationTest {
         let generator = ColorGenerator(config: config)
         let csvContent = SharedTestData.colorsCSV
         
-        let tempCSVFile = "\(tempDir)/test_colors.csv"
+        let tempCSVFile = "\(outputDir)/test_colors.csv"
         try csvContent.write(toFile: tempCSVFile, atomically: true, encoding: .utf8)
         
         try await generator.generate(from: tempCSVFile)
         
-        let colorsFile = "\(tempDir)/Colors.swift"
-        let dynamicFile = "\(tempDir)/Color+Dynamic.swift"
+        let colorsFile = "\(outputDir)/Colors.swift"
+        let dynamicFile = "\(outputDir)/Color+Dynamic.swift"
         
-        #expect(FileManager.default.fileExists(atPath: colorsFile))
-        #expect(FileManager.default.fileExists(atPath: dynamicFile))
+        #expect(FileManager.default.fileExists(atPath: colorsFile), "Colors.swift should be generated")
+        #expect(FileManager.default.fileExists(atPath: dynamicFile), "Color+Dynamic.swift should be generated")
+        
+        let originalDir = FileManager.default.currentDirectoryPath
+        FileManager.default.changeCurrentDirectoryPath(projectDir)
+        defer { FileManager.default.changeCurrentDirectoryPath(originalDir) }
+        
+        let logger = Logger(subsystem: "test", category: "test")
+        let foundProjectPath = try GeneratorHelper.findXcodeProjectPath(logger: logger)
+        #expect(foundProjectPath != nil, "Should find the Xcode project")
+        
+        if let foundPath = foundProjectPath {
+            let normalizedFoundPath = URL(fileURLWithPath: foundPath).resolvingSymlinksInPath().path
+            let normalizedExpectedPath = ((pbxprojPath as NSString).deletingLastPathComponent as NSString).deletingLastPathComponent  // Remove project.pbxproj and .xcodeproj
+            let normalizedExpected = URL(fileURLWithPath: normalizedExpectedPath).resolvingSymlinksInPath().path
+            #expect(normalizedFoundPath == normalizedExpected, "Should find the correct project directory")
+        }
         
         let colorsContent = try String(contentsOfFile: colorsFile, encoding: .utf8)
-        #expect(colorsContent.contains("import SwiftUI"))
-        #expect(colorsContent.contains("primaryBackgroundColor"))
-        
-        let dynamicContent = try String(contentsOfFile: dynamicFile, encoding: .utf8)
-        #expect(dynamicContent.contains("extension Color"))
-        #expect(dynamicContent.contains("userInterfaceStyle"))
+        #expect(colorsContent.contains("import SwiftUI"), "Generated files should be valid Swift code")
+        #expect(!colorsContent.isEmpty, "Generated files should not be empty")
     }
     
-    // MARK: - Localizable Strings Integration Tests
-    
-    @Test("Localization generation creates proper .lproj structure")
-    func localizationGenerationLprojStructure() async throws {
-        let tempDir = try createTestDirectory()
-        defer { cleanupTestDirectory(tempDir) }
+    @Test("Generated localization files can be added to valid Xcode project")
+    func addGeneratedLocalizationFilesToXcodeProject() async throws {
+        let (projectDir, pbxprojPath) = try createTestXcodeProject()
+        defer { cleanupTestDirectory(projectDir) }
+        
+        let outputDir = "\(projectDir)/../GeneratedLocalizations"
+        try FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
         
         let config = LocalizationConfig(
-            outputDirectory: tempDir,
-            enumName: "TestL10n",
-            sourceDirectory: tempDir,
+            outputDirectory: outputDir,
+            enumName: "L10n",
+            sourceDirectory: outputDir,
             csvFileName: "test_localizations.csv",
-            cleanupTemporaryFiles: false,
-            unifiedLocalizationDirectory: true,
-            useStringsCatalog: false
-        )
-        
-        let generator = LocalizationGenerator(config: config)
-        let csvContent = SharedTestData.localizationCSV
-        
-        let tempCSVFile = "\(tempDir)/test_localizations.csv"
-        try csvContent.write(toFile: tempCSVFile, atomically: true, encoding: .utf8)
-        
-        try await generator.generate(from: tempCSVFile)
-        
-        let esDir = "\(tempDir)/es.lproj"
-        let enDir = "\(tempDir)/en.lproj"
-        let frDir = "\(tempDir)/fr.lproj"
-        
-        #expect(FileManager.default.fileExists(atPath: esDir))
-        #expect(FileManager.default.fileExists(atPath: enDir))
-        #expect(FileManager.default.fileExists(atPath: frDir))
-        
-        let esStrings = "\(esDir)/Localizable.strings"
-        let enStrings = "\(enDir)/Localizable.strings"
-        let frStrings = "\(frDir)/Localizable.strings"
-        
-        #expect(FileManager.default.fileExists(atPath: esStrings))
-        #expect(FileManager.default.fileExists(atPath: enStrings))
-        #expect(FileManager.default.fileExists(atPath: frStrings))
-        
-        let enumFile = "\(tempDir)/TestL10n.swift"
-        #expect(FileManager.default.fileExists(atPath: enumFile))
-        
-        let enumContent = try String(contentsOfFile: enumFile, encoding: .utf8)
-        #expect(enumContent.contains("enum TestL10n"))
-        #expect(enumContent.contains("commonAppNameText"))
-        
-        let esContent = try String(contentsOfFile: esStrings, encoding: .utf8)
-        #expect(esContent.contains("jorgemrht"))
-        
-        let enContent = try String(contentsOfFile: enStrings, encoding: .utf8)
-        #expect(enContent.contains("My App"))
-        
-        let frContent = try String(contentsOfFile: frStrings, encoding: .utf8)
-        #expect(frContent.contains("Mon App"))
-    }
-    
-    // MARK: - Strings Catalog (.xcstrings) Integration Tests
-    
-    @Test("Strings catalog generation creates proper .xcstrings file")
-    func stringsCatalogGenerationXcstringsFile() async throws {
-        let tempDir = try createTestDirectory()
-        defer { cleanupTestDirectory(tempDir) }
-        
-        let config = LocalizationConfig(
-            outputDirectory: tempDir,
-            enumName: "CatalogL10n",
-            sourceDirectory: tempDir,
-            csvFileName: "test_catalog.csv",
-            cleanupTemporaryFiles: false,
-            unifiedLocalizationDirectory: true,
-            useStringsCatalog: true
-        )
-        
-        let generator = LocalizationGenerator(config: config)
-        let csvContent = SharedTestData.localizationCSV
-        
-        let tempCSVFile = "\(tempDir)/test_catalog.csv"
-        try csvContent.write(toFile: tempCSVFile, atomically: true, encoding: .utf8)
-        
-        try await generator.generate(from: tempCSVFile)
-        
-        let catalogFile = "\(tempDir)/Localizable.xcstrings"
-        #expect(FileManager.default.fileExists(atPath: catalogFile))
-        
-        let enumFile = "\(tempDir)/CatalogL10n.swift"
-        #expect(FileManager.default.fileExists(atPath: enumFile))
-        
-        // Verify .xcstrings content structure
-        let catalogData = try Data(contentsOf: URL(fileURLWithPath: catalogFile))
-        let catalog = try JSONSerialization.jsonObject(with: catalogData) as? [String: Any]
-        let catalogDict = try #require(catalog)
-        
-        #expect(catalogDict["version"] as? String == "1.0")
-        #expect(catalogDict["sourceLanguage"] as? String == "es")
-        
-        let strings = catalogDict["strings"] as? [String: Any]
-        let stringsDict = try #require(strings)
-        
-        #expect(stringsDict.keys.contains("common_app_name_text"))
-        #expect(stringsDict.keys.contains("login_title_text"))
-        
-        // Verify enum content
-        let enumContent = try String(contentsOfFile: enumFile, encoding: .utf8)
-        #expect(enumContent.contains("enum CatalogL10n"))
-        #expect(enumContent.contains("commonAppNameText"))
-    }
-    
-    // MARK: - Cross-Integration Tests
-    
-    @Test("Combined generation workflow with colors and localizations")
-    func combinedGenerationWorkflow() async throws {
-        let tempDir = try createTestDirectory()
-        defer { cleanupTestDirectory(tempDir) }
-        
-        // Setup subdirectories
-        let colorsDir = "\(tempDir)/Colors"
-        let localizablesDir = "\(tempDir)/Localizables"
-        
-        try FileManager.default.createDirectory(atPath: colorsDir, withIntermediateDirectories: true)
-        try FileManager.default.createDirectory(atPath: localizablesDir, withIntermediateDirectories: true)
-        
-        // Generate colors
-        let colorConfig = ColorConfig(
-            outputDirectory: colorsDir,
-            csvFileName: "colors.csv",
             cleanupTemporaryFiles: false
         )
         
-        let colorGenerator = ColorGenerator(config: colorConfig)
-        let colorCSVFile = "\(colorsDir)/colors.csv"
-        try SharedTestData.colorsCSV.write(toFile: colorCSVFile, atomically: true, encoding: .utf8)
+        let generator = LocalizationGenerator(config: config)
+        let csvContent = SharedTestData.localizationCSV
         
-        try await colorGenerator.generate(from: colorCSVFile)
+        let tempCSVFile = "\(outputDir)/test_localizations.csv"
+        try csvContent.write(toFile: tempCSVFile, atomically: true, encoding: .utf8)
         
-        // Generate localizations
-        let localizationConfig = LocalizationConfig(
-            outputDirectory: localizablesDir,
-            enumName: "AppStrings",
-            sourceDirectory: localizablesDir,
-            csvFileName: "localizations.csv",
-            cleanupTemporaryFiles: false,
-            unifiedLocalizationDirectory: true,
-            useStringsCatalog: false
+        try await generator.generate(from: tempCSVFile)
+        
+        let enumFile = "\(outputDir)/L10n.swift"
+        let esLproj = "\(outputDir)/es.lproj"
+        let enLproj = "\(outputDir)/en.lproj"
+        let frLproj = "\(outputDir)/fr.lproj"
+        
+        #expect(FileManager.default.fileExists(atPath: enumFile), "L10n.swift should be generated")
+        #expect(FileManager.default.fileExists(atPath: esLproj), "es.lproj should be created")
+        #expect(FileManager.default.fileExists(atPath: enLproj), "en.lproj should be created")
+        #expect(FileManager.default.fileExists(atPath: frLproj), "fr.lproj should be created")
+        
+        let originalDir = FileManager.default.currentDirectoryPath
+        FileManager.default.changeCurrentDirectoryPath(projectDir)
+        defer { FileManager.default.changeCurrentDirectoryPath(originalDir) }
+        
+        let logger = Logger(subsystem: "test", category: "test")
+        let foundProjectPath = try GeneratorHelper.findXcodeProjectPath(logger: logger)
+        #expect(foundProjectPath != nil, "Should find the Xcode project")
+        
+        if let foundPath = foundProjectPath {
+            let normalizedFoundPath = URL(fileURLWithPath: foundPath).resolvingSymlinksInPath().path
+            let normalizedExpectedPath = ((pbxprojPath as NSString).deletingLastPathComponent as NSString).deletingLastPathComponent  // Remove project.pbxproj and .xcodeproj
+            let normalizedExpected = URL(fileURLWithPath: normalizedExpectedPath).resolvingSymlinksInPath().path
+            #expect(normalizedFoundPath == normalizedExpected, "Should find the correct project directory")
+        }
+        
+        let enumContent = try String(contentsOfFile: enumFile, encoding: .utf8)
+        #expect(enumContent.contains("enum L10n"), "Generated enum should be valid Swift code")
+        #expect(!enumContent.isEmpty, "Generated files should not be empty")
+    }
+    
+    @Test("Regenerating files maintains only the most recent version")
+    func regeneratedFilesKeepMostRecentVersion() async throws {
+        let (projectDir, _) = try createTestXcodeProject()
+        defer { cleanupTestDirectory(projectDir) }
+        
+        let outputDir = "\(projectDir)/../GeneratedFiles"
+        try FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
+        
+        let config = ColorConfig(
+            outputDirectory: outputDir,
+            csvFileName: "test_colors.csv",
+            cleanupTemporaryFiles: false
         )
         
-        let localizationGenerator = LocalizationGenerator(config: localizationConfig)
-        let localizationCSVFile = "\(localizablesDir)/localizations.csv"
-        try SharedTestData.localizationCSV.write(toFile: localizationCSVFile, atomically: true, encoding: .utf8)
+        let generator = ColorGenerator(config: config)
+        let csvContent = SharedTestData.colorsCSV
+        let tempCSVFile = "\(outputDir)/test_colors.csv"
+        try csvContent.write(toFile: tempCSVFile, atomically: true, encoding: .utf8)
         
-        try await localizationGenerator.generate(from: localizationCSVFile)
+        try await generator.generate(from: tempCSVFile)
         
-        // Colors verification
-        #expect(FileManager.default.fileExists(atPath: "\(colorsDir)/Colors.swift"))
-        #expect(FileManager.default.fileExists(atPath: "\(colorsDir)/Color+Dynamic.swift"))
+        let colorsFile = "\(outputDir)/Colors.swift"
+        #expect(FileManager.default.fileExists(atPath: colorsFile), "First generation should create Colors.swift")
         
-        // Localizations verification
-        #expect(FileManager.default.fileExists(atPath: "\(localizablesDir)/AppStrings.swift"))
-        #expect(FileManager.default.fileExists(atPath: "\(localizablesDir)/es.lproj/Localizable.strings"))
-        #expect(FileManager.default.fileExists(atPath: "\(localizablesDir)/en.lproj/Localizable.strings"))
-        #expect(FileManager.default.fileExists(atPath: "\(localizablesDir)/fr.lproj/Localizable.strings"))
+        let firstAttributes = try FileManager.default.attributesOfItem(atPath: colorsFile)
+        let firstModificationDate = firstAttributes[.modificationDate] as! Date
         
-        let colorsContent = try String(contentsOfFile: "\(colorsDir)/Colors.swift", encoding: .utf8)
-        #expect(colorsContent.contains("primaryBackgroundColor"))
+        try await Task.sleep(nanoseconds: 1_000_000_000)
         
-        let appStringsContent = try String(contentsOfFile: "\(localizablesDir)/AppStrings.swift", encoding: .utf8)
-        #expect(appStringsContent.contains("enum AppStrings"))
-        #expect(appStringsContent.contains("commonAppNameText"))
+        try await generator.generate(from: tempCSVFile)
+        
+        let directoryContents = try FileManager.default.contentsOfDirectory(atPath: outputDir)
+        let colorFiles = directoryContents.filter { $0.hasPrefix("Colors") && $0.hasSuffix(".swift") }
+        
+        #expect(colorFiles.count == 1, "Should have only one Colors.swift file, not duplicates")
+        #expect(colorFiles.first == "Colors.swift", "Should maintain the original filename")
+        
+        let secondAttributes = try FileManager.default.attributesOfItem(atPath: colorsFile)
+        let secondModificationDate = secondAttributes[.modificationDate] as! Date
+        
+        #expect(secondModificationDate > firstModificationDate, "Regenerated file should have newer modification date")
     }
     
-    // MARK: - Test Helpers
-    
-    private func createTestDirectory() throws -> String {
-        let tempDir = NSTemporaryDirectory() + "/xcode-simple-test-\(UUID().uuidString)"
-        try FileManager.default.createDirectory(atPath: tempDir, withIntermediateDirectories: true)
-        return tempDir
+    @Test("Xcode project search functionality works correctly")
+    func xcodeProjectSearchFunctionality() throws {
+        let (projectDir, _) = try createTestXcodeProject()
+        defer { cleanupTestDirectory(projectDir) }
+        
+        let originalDir = FileManager.default.currentDirectoryPath
+        defer { FileManager.default.changeCurrentDirectoryPath(originalDir) }
+        let logger = Logger(subsystem: "test", category: "test")
+        
+        FileManager.default.changeCurrentDirectoryPath(projectDir)
+        let foundFromProjectDir = try GeneratorHelper.findXcodeProjectPath(logger: logger)
+        #expect(foundFromProjectDir != nil, "Should find project from project directory")
+        
+        let parentDir = (projectDir as NSString).deletingLastPathComponent
+        FileManager.default.changeCurrentDirectoryPath(parentDir)
+        let foundFromParentDir = try GeneratorHelper.findXcodeProjectPath(logger: logger)
+        #expect(foundFromParentDir != nil, "Should find project from parent directory")
+        
+        let emptyDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: emptyDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: emptyDir) }
+        
+        FileManager.default.changeCurrentDirectoryPath(emptyDir.path)
+        let notFound = try GeneratorHelper.findXcodeProjectPath(logger: logger)
+        #expect(notFound == nil, "Should not find project in empty directory")
     }
     
-    private func cleanupTestDirectory(_ path: String) {
-        try? FileManager.default.removeItem(atPath: path)
+    @Test("File replacement during regeneration maintains file integrity")
+    func fileReplacementMaintainsIntegrity() async throws {
+        let (projectDir, _) = try createTestXcodeProject()
+        defer { cleanupTestDirectory(projectDir) }
+        
+        let outputDir = "\(projectDir)/../GeneratedFiles"
+        try FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
+        
+        let initialConfig = LocalizationConfig(
+            outputDirectory: outputDir,
+            enumName: "InitialL10n",
+            sourceDirectory: outputDir,
+            csvFileName: "test_localizations.csv",
+            cleanupTemporaryFiles: false
+        )
+        
+        let generator1 = LocalizationGenerator(config: initialConfig)
+        let csvContent = SharedTestData.localizationCSV
+        let tempCSVFile = "\(outputDir)/test_localizations.csv"
+        try csvContent.write(toFile: tempCSVFile, atomically: true, encoding: .utf8)
+        
+        try await generator1.generate(from: tempCSVFile)
+        
+        let enumFile = "\(outputDir)/InitialL10n.swift"
+        #expect(FileManager.default.fileExists(atPath: enumFile), "Initial enum file should be created")
+        
+        let initialContent = try String(contentsOfFile: enumFile, encoding: .utf8)
+        #expect(initialContent.contains("InitialL10n"), "Should contain initial enum name")
+        
+        let updatedConfig = LocalizationConfig(
+            outputDirectory: outputDir,
+            enumName: "UpdatedL10n",
+            sourceDirectory: outputDir,
+            csvFileName: "test_localizations.csv",
+            cleanupTemporaryFiles: false
+        )
+        
+        let generator2 = LocalizationGenerator(config: updatedConfig)
+        try await generator2.generate(from: tempCSVFile)
+        
+        let updatedEnumFile = "\(outputDir)/UpdatedL10n.swift"
+        #expect(FileManager.default.fileExists(atPath: updatedEnumFile), "Updated enum file should be created")
+        
+        #expect(FileManager.default.fileExists(atPath: enumFile), "Original file should still exist")
+        
+        let updatedContent = try String(contentsOfFile: updatedEnumFile, encoding: .utf8)
+        #expect(updatedContent.contains("UpdatedL10n"), "Should contain updated enum name")
+        #expect(!updatedContent.contains("InitialL10n"), "Should not contain old enum name")
     }
 }

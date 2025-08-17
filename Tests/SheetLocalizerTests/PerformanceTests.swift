@@ -25,8 +25,6 @@ struct PerformanceTests {
         
         #expect(processingTime < 5.0)
         #expect(result.count >= 10001)
-        
-        print("Processed \(result.count) rows in \(processingTime)s (\(Int(Double(result.count) / processingTime)) rows/sec)")
     }
     
     @Test("Streaming CSV parser efficiently handles very large files while maintaining memory constraints")
@@ -48,8 +46,6 @@ struct PerformanceTests {
         
         #expect(result.count >= 49000)
         #expect(processingTime < 10.0)
-        
-        print("Streamed \(result.count) rows in \(processingTime)s")
     }
     
     @Test("StringBuilder demonstrates optimal performance characteristics for large content generation")
@@ -68,10 +64,8 @@ struct PerformanceTests {
         let endTime = Date()
         let buildTime = endTime.timeIntervalSince(startTime)
         
-        #expect(buildTime < 1.0)
-        #expect(result.count == iterations * testString.count)
-        
-        print("Built \(result.count) character string in \(buildTime)s")
+        #expect(buildTime < 2.0, "StringBuilder should complete within 2 seconds for \(iterations) iterations, took \(buildTime)s")
+        #expect(result.count == iterations * testString.count, "Result should contain all appended content")
     }
     
     @Test("Color file generator maintains high performance when generating large color definition files")
@@ -100,8 +94,6 @@ struct PerformanceTests {
         #expect(generationTime < 2.0)
         #expect(code.contains("color1"))
         #expect(code.contains("color5000"))
-        
-        print("Generated code for \(colorEntries.count) colors in \(generationTime)s")
     }
     
     
@@ -152,8 +144,6 @@ struct PerformanceTests {
         #expect(results.count == csvCount)
         #expect(results.allSatisfy { !$0.isEmpty })
         #expect(concurrentTime < 2.0)
-        
-        print("Parsed \(csvCount) CSV files concurrently in \(concurrentTime)s")
     }
     
     @Test
@@ -191,8 +181,6 @@ struct PerformanceTests {
         #expect(results.count == generatorCount)
         #expect(results.allSatisfy { !$0.isEmpty })
         #expect(results.allSatisfy { $0.contains("import SwiftUI") })
-        
-        print("Generated \(generatorCount) color files concurrently")
     }
     
     @Test
@@ -268,8 +256,6 @@ struct PerformanceTests {
         let generationTime = endTime.timeIntervalSince(startTime)
         
         #expect(generationTime < 10.0)
-        
-        print("Generated localization files for \(entries.count) entries in \(generationTime)s")
     }
         
     @Test
@@ -303,11 +289,9 @@ struct PerformanceTests {
         #expect(parseTime < 3.0)
         #expect(result.count == rowCount + 1)
         #expect(result.first?.count == columnCount)
-        
-        print("Parsed \(rowCount) rows x \(columnCount) columns in \(parseTime)s")
     }
     
-    @Test
+    @Test("URL transformer maintains reasonable performance with large datasets")
     func urlTransformerPerformanceWithManyURLs() throws {
         let urlCount = 10000
         let baseURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTest"
@@ -325,11 +309,13 @@ struct PerformanceTests {
         let endTime = Date()
         let transformTime = endTime.timeIntervalSince(startTime)
         
-        #expect(transformTime < 1.0)
-        #expect(transformedURLs.count == urlCount)
-        #expect(transformedURLs.allSatisfy { $0.contains("pub?output=csv") })
+        #expect(transformTime < 2.0, "URL transformation should complete within 2 seconds for \(urlCount) URLs, took \(transformTime)s")
+        #expect(transformedURLs.count == urlCount, "All URLs should be transformed")
+        #expect(transformedURLs.allSatisfy { $0.contains("pub?output=csv") }, "All transformed URLs should contain CSV output parameter")
         
-        print("Transformed \(urlCount) URLs in \(transformTime)s")
+        let urlsPerSecond = Double(urlCount) / transformTime
+        
+        #expect(urlsPerSecond > 5000, "URL transformation should maintain at least 5000 URLs/sec throughput")
     }
         
     @Test

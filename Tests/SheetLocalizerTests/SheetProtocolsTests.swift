@@ -228,7 +228,8 @@ struct SheetProtocolsTests {
             csvFileName: "color.csv",
             cleanupTemporaryFiles: false
         )
-        let _ = ColorGenerator(config: colorConfig)
+        
+        _ = ColorGenerator(config: colorConfig)
         
         let colorSheetConfig: any SheetConfig = colorConfig
         

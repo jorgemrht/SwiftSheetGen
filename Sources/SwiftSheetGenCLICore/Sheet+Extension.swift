@@ -11,17 +11,10 @@ extension LocalizationGenerator: SheetGenerator {}
 extension ColorGenerator: SheetGenerator {}
 
 // MARK: - Shared Logging and Validation Extensions
-extension AsyncParsableCommand {
+public extension AsyncParsableCommand {
   
     func validateGoogleSheetsURL(_ urlString: String) -> Bool {
-        let trimmedURL = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        guard !trimmedURL.isEmpty else { return false }
-        guard let url = URL(string: trimmedURL) else { return false }
-        guard url.host?.contains("docs.google.com") == true else { return false }
-        guard trimmedURL.contains("spreadsheets") else { return false }
-        
-        return true
+        urlString.isGoogleSheetsURL
     }
     
     func ensureOutputDirectoryExists(atPath path: String, logger: Logger) throws {

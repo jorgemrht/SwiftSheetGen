@@ -4,7 +4,7 @@ import CoreExtensions
 import os.log
 import SheetLocalizer
 
-protocol SheetGenCommand: AsyncParsableCommand {
+public protocol SheetGenCommand: AsyncParsableCommand {
     
     associatedtype ConfigType: SheetConfig
     associatedtype GeneratorType: SheetGenerator where GeneratorType.Config == ConfigType
@@ -25,7 +25,7 @@ protocol SheetGenCommand: AsyncParsableCommand {
 }
 
 // MARK: - SheetGenCommand Extension for Common Logic
-extension SheetGenCommand {
+public extension SheetGenCommand {
     
     var logPrivacy: LogPrivacyLevel {
         LogPrivacyLevel(from: sharedOptions.logPrivacyLevel)
@@ -39,7 +39,7 @@ extension SheetGenCommand {
         "\(FileManager.default.currentDirectoryPath)/\(commandSpecificDirectoryName.lowercased())/generated_\(commandSpecificDirectoryName.lowercased()).csv"
     }
     
-    public func run() async throws {
+    func run() async throws {
         
         let executionStartTime = Date()
         let commandName = Self.configuration.commandName ?? ""
@@ -83,27 +83,16 @@ extension SheetGenCommand {
 
     func downloadCSVDataFromGoogleSheets() async throws {
         Self.logger.debug("🌐 Initializing CSV downloader with default configuration")
-        let csvDataDownloader = CSVDownloader.createWithDefaults()
-        
-        // Validate URL accessibility before attempting download
-        Self.logger.debug("🔍 Validating Google Sheets URL accessibility")
-        let isURLAccessible = await csvDataDownloader.validateURL(sharedOptions.sheetsURL)
-        guard isURLAccessible else {
-            throw SheetLocalizerError.invalidURL(
-                "The provided Google Sheets URL is not accessible. Please check the URL and sharing permissions."
-            )
-        }
+        let csvDataDownloader = CSVDownloader()
         
         Self.logger.log("✅ Google Sheets URL validation successful")
         
         let tempDirectory = (temporaryCSVFilePath as NSString).deletingLastPathComponent
         try ensureOutputDirectoryExists(atPath: tempDirectory, logger: Self.logger)
 
-        try await csvDataDownloader.downloadWithRetry(
+        try await csvDataDownloader.download(
             from: sharedOptions.sheetsURL,
-            to: temporaryCSVFilePath,
-            maxRetries: 3,
-            retryDelay: 2.0
+            to: temporaryCSVFilePath
         )
         Self.logger.log("✅ CSV data downloaded successfully to: \(temporaryCSVFilePath)")
     }
@@ -139,7 +128,7 @@ extension SheetGenCommand {
     }
 }
 
-extension SheetGenCommand {
+public extension SheetGenCommand {
     func validateAndLogGoogleSheetsURL() throws {
         guard validateGoogleSheetsURL(sharedOptions.sheetsURL) else {
             Self.logger.logError("❌ Invalid Google Sheets URL:", value: sharedOptions.sheetsURL, isPrivate: logPrivacy.isPrivate)

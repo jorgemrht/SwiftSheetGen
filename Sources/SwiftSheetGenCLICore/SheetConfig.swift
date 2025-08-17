@@ -1,7 +1,6 @@
 // MARK: - Protocols for Abstraction
-protocol SheetConfig {
+public protocol SheetConfig {
     var outputDirectory: String { get }
     var csvFileName: String { get }
     var cleanupTemporaryFiles: Bool { get }
 }
-

@@ -1,7 +1,8 @@
-// MARK: - Protocols for Abstraction
+import Foundation
 
-protocol SheetGenerator {
+public protocol SheetGenerator {
     associatedtype Config: SheetConfig
+    
     init(config: Config)
     func generate(from csvFilePath: String) async throws
 }

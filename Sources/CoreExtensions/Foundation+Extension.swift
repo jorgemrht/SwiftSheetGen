@@ -12,11 +12,20 @@ public extension String {
     }
     
     var isGoogleSheetsURL: Bool {
-        contains("docs.google.com/spreadsheets") && !isEmptyOrWhitespace
+        guard !isEmptyOrWhitespace else { return false }
+        
+        let trimmed = trimmedContent
+        
+        let pubhtmlPattern = #"^https://docs\.google\.com/spreadsheets/d/e/[a-zA-Z0-9_.-]+/pubhtml$"#
+        
+        let csvPattern = #"^https://docs\.google\.com/spreadsheets/d/e/[a-zA-Z0-9_.-]+/pub\?output=csv$"#
+        
+        return trimmed.range(of: pubhtmlPattern, options: .regularExpression) != nil ||
+               trimmed.range(of: csvPattern, options: .regularExpression) != nil
     }
     
     var googleSheetsDocumentID: String? {
-        let pattern = "/spreadsheets/d/([a-zA-Z0-9-_]+)"
+        let pattern = #"/spreadsheets/d/e/([a-zA-Z0-9_.-]+)/"#
         guard let regex = try? NSRegularExpression(pattern: pattern),
               let match = regex.firstMatch(in: self, range: NSRange(startIndex..., in: self)),
               let range = Range(match.range(at: 1), in: self) else {

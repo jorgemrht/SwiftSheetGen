@@ -11,32 +11,27 @@ public struct GoogleSheetURLTransformer: Sendable {
     public static func transformToCSV(_ urlString: String) throws -> String {
         
         guard urlString.isGoogleSheetsURL else {
-            logger.error("Provided string is not a valid Google Sheets URL: \(urlString)")
+            logger.error("Provided string is not a valid Google Sheets URL. Only these formats are accepted:")
+            logger.error("  1. https://docs.google.com/spreadsheets/d/e/ID-document/pubhtml")
+            logger.error("  2. https://docs.google.com/spreadsheets/d/e/ID-document/pub?output=csv")
+            logger.error("Received: \(urlString)")
             throw SheetLocalizerError.invalidGoogleSheetsURL(url: urlString)
         }
         
         let trimmedURL = urlString.trimmedContent
         
-        // 1. Check if the URL is already in a downloadable format.
-        if trimmedURL.contains("output=csv") || trimmedURL.contains("export?format=csv") {
+        if trimmedURL.hasSuffix("/pub?output=csv") {
             logger.debug("URL already in CSV format: \(trimmedURL)")
             return trimmedURL
         }
         
-        // 2. Handle the most common published format: /pubhtml
-        // This should be transformed to /pub?output=csv
-        if trimmedURL.contains("/pubhtml") {
+        if trimmedURL.hasSuffix("/pubhtml") {
             let transformedURL = trimmedURL.replacingOccurrences(of: "/pubhtml", with: "/pub?output=csv")
             logger.info("Transformed /pubhtml URL to /pub?output=csv format.")
             return transformedURL
         }
-                
-        // 3. Default transformation for other standard sheet URLs.
-        let transformedURL = trimmedURL.hasSuffix("/")
-            ? "\(trimmedURL)pub?output=csv"
-            : "\(trimmedURL)/pub?output=csv"
-            
-        logger.info("Applied default transformation to URL.")
-        return transformedURL
+        
+        logger.error("URL passed validation but couldn't be transformed: \(trimmedURL)")
+        throw SheetLocalizerError.invalidGoogleSheetsURL(url: urlString)
     }
 }

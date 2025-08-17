@@ -29,8 +29,8 @@ struct ColorFileGeneratorTests {
         ]
     }
     
-    @Test
-    func  colorFileGeneratorBasicStructure() throws {
+    @Test("ColorFileGenerator creates proper SwiftUI color definitions with platform imports")
+    func colorFileGeneratorBasicStructure() throws {
         let entries = createSampleColorEntries()
         let generator = ColorFileGenerator()
         
@@ -50,7 +50,7 @@ struct ColorFileGeneratorTests {
         #expect(code.contains("000000") || code.contains("0x0"))
     }
     
-    @Test
+    @Test("ColorFileGenerator handles empty color entries gracefully")
     func colorFileGeneratorEmptyEntries() {
         let entries: [ColorEntry] = []
         let generator = ColorFileGenerator()
@@ -64,7 +64,7 @@ struct ColorFileGeneratorTests {
         #expect(!code.contains("backgroundColor"))
     }
     
-    @Test
+    @Test("ColorFileGenerator sanitizes color names for valid Swift identifiers")
     func colorFileGeneratorNameSanitization() {
         let entries = [
             ColorEntry(
@@ -90,12 +90,10 @@ struct ColorFileGeneratorTests {
         let generator = ColorFileGenerator()
         let code = generator.generateCode(entries: entries)
         
-        // Test for camelCase conversion (most likely implementation)
         #expect(code.contains("primaryColor") || code.contains("primary"))
         #expect(code.contains("specialColor") || code.contains("special"))
         #expect(code.contains("numberStart") || code.contains("123"))
         
-        // Verify the hex colors are included
         #expect(code.contains("FF0000") || code.contains("0xFF0000"))
         #expect(code.contains("00FF00") || code.contains("0xFF00"))
         #expect(code.contains("0000FF") || code.contains("0xFF"))
@@ -103,7 +101,7 @@ struct ColorFileGeneratorTests {
     
     // MARK: - ColorDynamicFileGenerator Tests
     
-    @Test
+    @Test("ColorDynamicFileGenerator creates UIKit dynamic color providers")
     func colorDynamicFileGeneratorBasicGeneration() {
         _ = createSampleColorEntries()
         
@@ -119,7 +117,7 @@ struct ColorFileGeneratorTests {
         #expect(code.contains("dark") && code.contains("light"))
     }
     
-    @Test
+    @Test("ColorDynamicFileGenerator includes proper platform-specific extensions")
     func colorDynamicFileGeneratorExtensions() {
         _ = createSampleColorEntries()
         
@@ -132,7 +130,7 @@ struct ColorFileGeneratorTests {
         #expect(code.contains("#else") || code.contains("#endif"))
     }
     
-    @Test
+    @Test("ColorDynamicFileGenerator handles empty entries appropriately")
     func colorDynamicFileGeneratorEmptyEntries() {
         let _ : [ColorEntry] = []
         
@@ -144,7 +142,7 @@ struct ColorFileGeneratorTests {
         #expect(code.contains("init(") || code.contains("Color"))
     }
     
-    @Test
+    @Test("ColorDynamicFileGenerator includes generation metadata and warnings")
     func colorDynamicFileGeneratorMetadata() {
         _ = createSampleColorEntries()
         
@@ -155,14 +153,14 @@ struct ColorFileGeneratorTests {
         #expect(code.contains("do not edit"))
     }
     
-    @Test
+    @Test("ColorDynamicFileGenerator handles identical light and dark colors")
     func colorDynamicFileGeneratorSameColors() {
         let _ = [
             ColorEntry(
                 name: "staticColor",
                 anyHex: nil,
                 lightHex: "#FF0000",
-                darkHex: "#FF0000" // Same as light
+                darkHex: "#FF0000"
             )
         ]
         

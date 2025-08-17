@@ -217,10 +217,9 @@ struct SheetProtocolsTests {
             unifiedLocalizationDirectory: true,
             useStringsCatalog: false
         )
-        let locGenerator = LocalizationGenerator(config: locConfig)
+        let _ = LocalizationGenerator(config: locConfig)
         
         let locSheetConfig: any SheetConfig = locConfig
-        let locSheetGenerator: any SheetGenerator = locGenerator
         
         #expect(locSheetConfig.outputDirectory == "/loc/test", "Config should have correct values")
         
@@ -229,10 +228,9 @@ struct SheetProtocolsTests {
             csvFileName: "color.csv",
             cleanupTemporaryFiles: false
         )
-        let colorGenerator = ColorGenerator(config: colorConfig)
+        let _ = ColorGenerator(config: colorConfig)
         
         let colorSheetConfig: any SheetConfig = colorConfig
-        let colorSheetGenerator: any SheetGenerator = colorGenerator
         
         #expect(colorSheetConfig.outputDirectory == "/color/test",
                "Color config should have correct values")

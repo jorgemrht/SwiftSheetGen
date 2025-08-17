@@ -6,26 +6,37 @@ import os.log
 @Suite
 struct CoreExtensionsLoggingTests {
 
-    @Test
-    func testLoggerExtensions() {
+    @Test("Logger extensions support all standard logging levels")
+    func loggerExtensionsBasicFunctionality() {
         let logger = Logger(subsystem: "com.example.tests", category: "logging")
         
-        logger.debug("This is a debug message")
-        logger.info("This is an info message")
-        logger.notice("This is a notice message")
-        logger.warning("This is a warning message")
-        logger.error("This is an error message")
-        logger.critical("This is a critical message")
-        
-        #expect(true)
+        // Test that all logging methods can be called without throwing
+        #expect(throws: Never.self) {
+            logger.debug("Debug message test")
+            logger.info("Info message test")
+            logger.notice("Notice message test")
+            logger.warning("Warning message test")
+            logger.error("Error message test")
+            logger.critical("Critical message test")
+        }
     }
 
-    @Test
-    func testLogPrivacyLevel() {
+    @Test("LogPrivacyLevel enumeration provides correct privacy settings")
+    func logPrivacyLevelValidation() {
         let privateLevel = LogPrivacyLevel.private
         let publicLevel = LogPrivacyLevel.public
         
-        #expect(privateLevel == .private)
-        #expect(publicLevel == .public)
+        #expect(privateLevel.isPrivate == true)
+        #expect(privateLevel.isPublic == false)
+        #expect(publicLevel.isPrivate == false)
+        #expect(publicLevel.isPublic == true)
+        
+        let fromPrivateString = LogPrivacyLevel(from: "private")
+        let fromPublicString = LogPrivacyLevel(from: "public")
+        let fromInvalidString = LogPrivacyLevel(from: "invalid")
+        
+        #expect(fromPrivateString.isPrivate == true)
+        #expect(fromPublicString.isPublic == true)
+        #expect(fromInvalidString.isPublic == true)
     }
 }

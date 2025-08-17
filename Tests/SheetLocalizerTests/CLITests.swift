@@ -85,7 +85,7 @@ struct CLITests {
     
     @Test("LocalizationCommand conforms to SheetGenCommand protocol")
     func localizationCommandProtocolConformance() throws {
-        let command = try LocalizationCommand.parse(["https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml"])
+        _ = try LocalizationCommand.parse(["https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml"])
         
         #expect(String(describing: LocalizationCommand.logger).contains("Logger"), "Should have logger configured")
     }

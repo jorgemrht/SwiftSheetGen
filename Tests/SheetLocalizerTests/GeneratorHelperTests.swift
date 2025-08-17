@@ -24,7 +24,7 @@ struct GeneratorHelperTests {
         
         // Handle path resolution differences (e.g., /private/var vs /var)
         let normalizedFoundPath = foundPath.map { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path }
-        let normalizedTempPath = tempDir.resolvingSymlinksInPath().path
+        let normalizedTempPath = projectDir.deletingLastPathComponent().resolvingSymlinksInPath().path
         #expect(normalizedFoundPath == normalizedTempPath)
     }
     
@@ -225,7 +225,7 @@ struct GeneratorHelperTests {
         let foundPath = try GeneratorHelper.findXcodeProjectPath(logger: logger)
         // Handle path resolution differences (e.g., /private/var vs /var)
         let normalizedFoundPath = foundPath.map { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path }
-        let normalizedTempPath = tempDir.resolvingSymlinksInPath().path
+        let normalizedTempPath = projectDir.deletingLastPathComponent().resolvingSymlinksInPath().path
         #expect(normalizedFoundPath == normalizedTempPath)
         
         try await GeneratorHelper.cleanupTemporaryFile(at: tempFile.path, logger: logger)

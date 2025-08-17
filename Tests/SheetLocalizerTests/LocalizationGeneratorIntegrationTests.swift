@@ -5,8 +5,8 @@ import Foundation
 @Suite()
 struct LocalizationGeneratorIntegrationTests {
 
-    @Test
-    func testGenerateWithValidCSV() async throws {
+    @Test("Localization generation creates proper .lproj structure")
+    func localizationGenerationCreatesProperLprojStructure() async throws {
        
         let csv = SharedTestData.localizationCSV
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
@@ -47,8 +47,8 @@ struct LocalizationGeneratorIntegrationTests {
         }
     }
 
-    @Test
-    func testGenerateThrowsOnMissingHeader() async throws {
+    @Test("Localization generator handles missing CSV headers appropriately")
+    func localizationGeneratorHandlesMissingCSVHeaders() async throws {
         let csv = """
         "", "common", "app_name", "text", "jorgemrht", "My App", "Mon App"
         "", "common", "language_code", "text", "es", "en", "fr"
@@ -83,8 +83,8 @@ struct LocalizationGeneratorIntegrationTests {
         }
     }
 
-    @Test
-    func testGenerateThrowsOnInsufficientRows() async throws {
+    @Test("Localization generator validates minimum CSV data requirements")
+    func localizationGeneratorValidatesMinimumCSVDataRequirements() async throws {
         let csv = """
         "[Check]", "[View]", "[Item]", "[Type]", "es", "en", "fr"
         "", "common", "app_name", "text", "jorgemrht", "My App", "Mon App"

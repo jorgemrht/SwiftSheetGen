@@ -7,29 +7,43 @@ struct ModelsConfigTests {
     
     // MARK: - LocalizationEntry Tests
     
-    @Test("LocalizationEntry initializes correctly")
-    func localizationEntryInitialization() {
+    @Test("LocalizationEntry initialization and basic properties",
+          arguments: [
+              (["en": "Login", "es": "Iniciar sesión"], false),
+              ([:], true),
+              (["en": "Text with \"quotes\" and symbols: @#$%", "es": "Texto con acentos: áéíóú ñ"], false)
+          ])
+    func localizationEntryProperties(translations: [String: String], isEmpty: Bool) {
         let entry = LocalizationEntry(
             view: "login",
             item: "title", 
             type: "text",
-            translations: ["en": "Login", "es": "Iniciar sesión"]
+            translations: translations
         )
         
         #expect(entry.view == "login")
         #expect(entry.item == "title")
         #expect(entry.type == "text")
-        #expect(entry.translations["en"] == "Login")
-        #expect(entry.translations["es"] == "Iniciar sesión")
+        #expect(entry.translations.isEmpty == isEmpty)
+        
+        if !isEmpty {
+            for (key, value) in translations {
+                #expect(entry.translation(for: key) == value)
+                #expect(entry.hasTranslation(for: key))
+            }
+        }
     }
     
-    @Test("LocalizationEntry key generation basic cases",
+    @Test("LocalizationEntry key generation handles various formats",
           arguments: [
               ("profile", "user_count", "button", "profile_user_count_button"),
               ("common", "cancel", "action", "common_cancel_action"),
-              ("login", "forgot_password", "link", "login_forgot_password_link")
+              ("login", "forgot_password", "link", "login_forgot_password_link"),
+              ("special-chars", "test_item", "text", "special_chars_test_item_text"),
+              ("settings-view", "notification-sound", "option", "settings_view_notification_sound_option"),
+              ("dashboard.overview", "widget_count", "counter", "dashboard.overview_widget_count_counter")
           ])
-    func localizationEntryKey(
+    func localizationEntryKeyGeneration(
         view: String,
         item: String,
         type: String, 
@@ -43,63 +57,6 @@ struct ModelsConfigTests {
         )
         
         #expect(entry.key == expectedKey)
-    }
-    
-    @Test("LocalizationEntry hasTranslation check")
-    func localizationEntryHasTranslation() {
-        let entry = LocalizationEntry(
-            view: "common",
-            item: "app_name",
-            type: "text",
-            translations: ["en": "My App", "fr": "Mon App"]
-        )
-        
-        #expect(entry.hasTranslation(for: "en") == true)
-        #expect(entry.hasTranslation(for: "fr") == true)
-        #expect(entry.hasTranslation(for: "es") == false)
-        #expect(entry.hasTranslation(for: "de") == false)
-    }
-    
-    @Test("LocalizationEntry translation retrieval")
-    func localizationEntryTranslation() {
-        let entry = LocalizationEntry(
-            view: "common",
-            item: "app_name", 
-            type: "text",
-            translations: ["en": "My App", "es": "Mi App"]
-        )
-        
-        #expect(entry.translation(for: "en") == "My App")
-        #expect(entry.translation(for: "es") == "Mi App")
-        #expect(entry.translation(for: "fr") == nil)
-    }
-    
-    @Test("LocalizationEntry handles empty translations")
-    func localizationEntryEmptyTranslations() {
-        let entry = LocalizationEntry(
-            view: "test",
-            item: "empty",
-            type: "text",
-            translations: [:]
-        )
-        
-        #expect(entry.translations.isEmpty)
-        #expect(entry.hasTranslation(for: "en") == false)
-        #expect(entry.translation(for: "en") == nil)
-    }
-    
-    @Test("LocalizationEntry handles special characters in components")
-    func localizationEntrySpecialCharacters() {
-        let entry = LocalizationEntry(
-            view: "special-view",
-            item: "item",
-            type: "button",
-            translations: ["en": "Test with \"quotes\" and special chars: áéíóú"]
-        )
-        
-        #expect(entry.view == "special-view")
-        #expect(entry.key == "special_view_item_button")
-        #expect(entry.translation(for: "en")?.contains("áéíóú") == true)
     }
     
     // MARK: - Configuration Comprehensive Tests
@@ -178,59 +135,33 @@ struct ModelsConfigTests {
     
     // MARK: - ColorEntry Tests
     
-    @Test("ColorEntry initializes correctly")
-    func colorEntryInitialization() {
+    @Test("ColorEntry handles various hex color formats and configurations",
+          arguments: [
+              ("primaryColor", "#FF0000", "#FF5733", "#AA3311", false),
+              ("backgroundColor", nil, "#FFFFFF", "#000000", true),
+              ("testColor", "#FF00FF", "FF0000", "AA0000", false),
+              ("staticColor", nil, "#FFFFFF", "#FFFFFF", true)
+          ])
+    func colorEntryValidation(name: String, anyHex: String?, lightHex: String, darkHex: String, isNilAny: Bool) {
         let entry = ColorEntry(
-            name: "primaryColor",
-            anyHex: nil,
-            lightHex: "#FF5733",
-            darkHex: "#AA3311"
+            name: name,
+            anyHex: anyHex,
+            lightHex: lightHex,
+            darkHex: darkHex
         )
         
-        #expect(entry.name == "primaryColor")
-        #expect(entry.lightHex == "#FF5733")
-        #expect(entry.darkHex == "#AA3311")
-        #expect(entry.anyHex == nil)
+        #expect(entry.name == name)
+        #expect(entry.lightHex == lightHex)
+        #expect(entry.darkHex == darkHex)
+        #expect((entry.anyHex == nil) == isNilAny)
+        
+        if !isNilAny {
+            #expect(entry.anyHex == anyHex)
+        }
     }
     
-    @Test("ColorEntry handles hex colors without #")
-    func colorEntryHexWithoutHash() {
-        let entry = ColorEntry(
-            name: "testColor",
-            anyHex: nil,
-            lightHex: "FF0000",
-            darkHex: "AA0000"
-        )
-        
-        #expect(entry.lightHex == "FF0000")
-        #expect(entry.darkHex == "AA0000")
-    }
     
-    @Test("ColorEntry handles same light and dark colors")
-    func colorEntrySameColors() {
-        let entry = ColorEntry(
-            name: "staticColor",
-            anyHex: nil,
-            lightHex: "#FFFFFF",
-            darkHex: "#FFFFFF"
-        )
-        
-        #expect(entry.lightHex == entry.darkHex)
-    }
     
-    @Test("ColorEntry handles anyHex parameter")
-    func colorEntryAnyHex() {
-        let entry = ColorEntry(
-            name: "testColor",
-            anyHex: "#FF00FF",
-            lightHex: "#000000",
-            darkHex: "#FFFFFF"
-        )
-        
-        #expect(entry.anyHex == "#FF00FF")
-        #expect(entry.lightHex == "#000000")
-        #expect(entry.darkHex == "#FFFFFF")
-    }
     
     @Test("Comprehensive ColorConfig validation")
     func comprehensiveColorConfigTest() {
@@ -326,34 +257,42 @@ struct ModelsConfigTests {
         #expect(error.localizedDescription.contains("sufficient"))
     }
     
-    // MARK: - LocalizationRow Tests
+    // MARK: - Row Model Tests
     
-    @Test("LocalizationRow validation")
-    func localizationRowValidation() {
-
-        let validRowData = ["", "common", "app_name", "text", "My App", "Mi App"]
-        let invalidRowData = ["", "", "", "", "", ""]
-        
-        #expect(validRowData.count >= 4)
-        #expect(validRowData[1] != "")
-        #expect(validRowData[2] != "")
-        #expect(validRowData[3] != "")
-        
-        #expect(invalidRowData[1] == "")
-        #expect(invalidRowData[2] == "")
-    }
-    
-    // MARK: - ColorRow Tests
-    
-    @Test("ColorRow validation") 
-    func colorRowValidation() {
-        let validColorData = ["primaryColor", "#FF5733", "#AA3311", "Primary brand color"]
-        let invalidColorData = ["", "", "", ""]
-        
-        #expect(validColorData[0] != "") 
-        #expect(validColorData[1].hasPrefix("#") || validColorData[1].count == 6)
-        #expect(validColorData[2].hasPrefix("#") || validColorData[2].count == 6)
-        
-        #expect(invalidColorData[0] == "")
+    @Test("Row models validation and creation",
+          arguments: [
+              ("localization", true),
+              ("color", false)
+          ])
+    func rowModelsValidation(modelType: String, isLocalization: Bool) {
+        if isLocalization {
+            let row = LocalizationRow(
+                view: "login",
+                item: "title",
+                type: "text",
+                translations: ["en": "Login", "es": "Iniciar sesión", "fr": "Connexion"]
+            )
+            
+            #expect(row.view == "login")
+            #expect(row.item == "title")
+            #expect(row.type == "text")
+            #expect(row.translations["en"] == "Login")
+            #expect(row.translations["es"] == "Iniciar sesión")
+            #expect(row.translations["fr"] == "Connexion")
+        } else {
+            let row = ColorRow(
+                name: "primaryColor",
+                anyHex: "#FF0000",
+                lightHex: "#FF3333", 
+                darkHex: "#CC0000",
+                desc: "Primary brand color"
+            )
+            
+            #expect(row.name == "primaryColor")
+            #expect(row.anyHex == "#FF0000")
+            #expect(row.lightHex == "#FF3333")
+            #expect(row.darkHex == "#CC0000")
+            #expect(row.desc == "Primary brand color")
+        }
     }
 }

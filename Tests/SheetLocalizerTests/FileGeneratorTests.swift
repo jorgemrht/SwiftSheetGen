@@ -7,70 +7,123 @@ struct FileGeneratorTests {
     
     // MARK: - SwiftEnumGenerator Tests
     
-    @Test("SwiftEnumGenerator creates comprehensive localization enums with proper structure and methods")
-    func swiftEnumGeneratorBasicCodeGeneration() {
-        let generator = SwiftEnumGenerator(enumName: "L10n")
-        let keys = ["common_app_name_text", "login_title_text", "profile_version_text"]
-        
+    @Test("SwiftEnumGenerator creates comprehensive localization enums with proper structure and methods",
+          arguments: [
+              (["common_app_name_text"], "L10n"),
+              (["login_title_text", "profile_version_text"], "AppStrings"),
+              (["common_app_name_text", "login_title_text", "profile_version_text"], "Localizable")
+          ])
+    func swiftEnumGeneratorCodeGeneration(keys: [String], enumName: String) {
+        let generator = SwiftEnumGenerator(enumName: enumName)
         let code = generator.generateCode(allKeys: keys)
         
-        #expect(code.contains("public enum L10n: String, CaseIterable, Sendable"), "Generated enum should have proper declaration with protocols")
-        #expect(code.contains("@frozen"), "Generated enum should be marked as frozen for performance")
-        #expect(code.contains("import Foundation"), "Generated code should import Foundation")
-        #expect(code.contains("import SwiftUI"), "Generated code should import SwiftUI for LocalizedStringKey support")
+        #expect(code.contains("public enum \(enumName): String, CaseIterable, Sendable"))
+        #expect(code.contains("@frozen"))
+        #expect(code.contains("import Foundation"))
+        #expect(code.contains("import SwiftUI"))
         
-        #expect(code.contains("case commonAppNameText = \"common_app_name_text\""), "Localization keys should be converted to camelCase enum cases")
-        #expect(code.contains("case loginTitleText = \"login_title_text\""), "All provided keys should be included as enum cases")
-        #expect(code.contains("case profileVersionText = \"profile_version_text\""), "Complex key names should be properly camelCased")
+        for key in keys {
+            let camelCase = key.replacingOccurrences(of: "_", with: " ")
+                              .replacingOccurrences(of: "-", with: " ")
+                              .split(separator: " ")
+                              .enumerated()
+                              .map { $0.offset == 0 ? $0.element.lowercased() : $0.element.capitalized }
+                              .joined()
+            #expect(code.contains("case \(camelCase) = \"\(key)\""))
+        }
         
-        #expect(code.contains("public var localized: String"), "Generated enum should provide basic localized property")
-        #expect(code.contains("public func localized(_ args: CVarArg...) -> String"), "Generated enum should support formatted localization with arguments")
-        #expect(code.contains("public func localized(bundle: Bundle) -> String"), "Generated enum should support custom bundle localization")
-        #expect(code.contains("public var localizedString: LocalizedStringKey"), "Generated enum should provide SwiftUI LocalizedStringKey support")
+        #expect(code.contains("public var localized: String"))
+        #expect(code.contains("public func localized(_ args: CVarArg...) -> String"))
+        #expect(code.contains("public func localized(bundle: Bundle) -> String"))
+        #expect(code.contains("public var localizedString: LocalizedStringKey"))
     }
     
-    @Test("SwiftEnumGenerator respects custom enum names for flexible code generation")
-    func swiftEnumGeneratorCustomEnumNameSupport() {
-        let generator = SwiftEnumGenerator(enumName: "Strings")
-        let keys = ["test_key"]
-        
+    @Test("SwiftEnumGenerator handles edge cases gracefully",
+          arguments: [
+              ([], "Empty keys"),
+              (["test_key_1", "test.key.1", "test-key-1"], "Special characters"),
+              (["123numberStart", "primary-color-1"], "Invalid identifiers")
+          ])
+    func swiftEnumGeneratorEdgeCases(keys: [String], description: String) {
+        let generator = SwiftEnumGenerator(enumName: "TestEnum")
         let code = generator.generateCode(allKeys: keys)
         
-        #expect(code.contains("public enum Strings: String, CaseIterable, Sendable"), "Custom enum name should be used in generated declaration")
+        #expect(code.contains("public enum TestEnum: String, CaseIterable, Sendable"))
+        #expect(code.contains("public var localized: String"))
+        
+        for key in keys {
+            #expect(code.contains("= \"\(key)\""), "Original key values should be preserved: \(key)")
+        }
     }
     
-    @Test("SwiftEnumGenerator handles empty key sets gracefully while maintaining proper structure")
-    func swiftEnumGeneratorEmptyKeysHandling() {
+    @Test("SwiftEnumGenerator includes proper generation metadata")
+    func swiftEnumGeneratorMetadata() {
         let generator = SwiftEnumGenerator(enumName: "L10n")
-        let keys: [String] = []
+        let code = generator.generateCode(allKeys: ["test_key"])
         
-        let code = generator.generateCode(allKeys: keys)
-        
-        #expect(code.contains("public enum L10n: String, CaseIterable, Sendable"), "Empty key set should still produce valid enum declaration")
-        #expect(code.contains("public var localized: String"), "Empty enum should still include all localization methods for consistency")
+        #expect(code.contains("Auto-generated by SheetLocalizer"))
+        #expect(code.contains("Generated on:"))
+        #expect(code.contains("do not edit"))
     }
     
-    @Test("SwiftEnumGenerator includes proper file header with generation metadata and warnings")
-    func swiftEnumGeneratorGenerationMetadata() {
-        let generator = SwiftEnumGenerator(enumName: "L10n")
-        let keys = ["test_key"]
-        
-        let code = generator.generateCode(allKeys: keys)
-        
-        #expect(code.contains("Auto-generated by SheetLocalizer"), "Generated file should identify itself as auto-generated")
-        #expect(code.contains("Generated on:"), "Generated file should include timestamp for tracking")
-        #expect(code.contains("do not edit"), "Generated file should warn against manual editing")
+    @Test("Complete workflows generate consistent and coordinated file outputs",
+          arguments: [
+              ("localization", true),
+              ("color", false)
+          ])
+    func completeWorkflowIntegration(workflowType: String, isLocalization: Bool) throws {
+        if isLocalization {
+            let entries = [
+                LocalizationEntry(view: "common", item: "app_name", type: "text", translations: [
+                    "en": "My App", "es": "Mi Aplicación", "fr": "Mon App"
+                ]),
+                LocalizationEntry(view: "login", item: "title", type: "text", translations: [
+                    "en": "Login", "es": "Iniciar Sesión", "fr": "Connexion"
+                ])
+            ]
+            
+            let enumCode = SwiftEnumGenerator(enumName: "L10n").generateCode(allKeys: entries.map(\.key).sorted())
+            let catalogData = try StringsCatalogGenerator.generate(for: entries, sourceLanguage: "en", developmentRegion: "en")
+            
+            #expect(enumCode.contains("public enum L10n: String, CaseIterable, Sendable"))
+            #expect(enumCode.contains("case commonAppNameText"))
+            #expect(enumCode.contains("case loginTitleText"))
+            
+            let catalog = try JSONSerialization.jsonObject(with: catalogData) as! [String: Any]
+            #expect(catalog["sourceLanguage"] as? String == "en")
+            #expect((catalog["strings"] as! [String: Any]).count == 2)
+        } else {
+            let colorEntries = [
+                ColorEntry(name: "primaryBackground", anyHex: nil, lightHex: "#FFFFFF", darkHex: "#000000"),
+                ColorEntry(name: "accentColor", anyHex: nil, lightHex: "#007AFF", darkHex: "#0056CC")
+            ]
+            
+            let staticCode = ColorFileGenerator().generateCode(entries: colorEntries)
+            let dynamicCode = ColorDynamicFileGenerator().generateCode()
+            
+            #expect(staticCode.contains("import SwiftUI") && dynamicCode.contains("import SwiftUI"))
+            #expect(staticCode.contains("primaryBackground") || staticCode.contains("Primary"))
+            #expect(dynamicCode.contains("extension Color"))
+        }
     }
     
-    @Test("SwiftEnumGenerator preserves original key values while handling identifier conflicts")
-    func swiftEnumGeneratorIdentifierConflictResolution() {
-        let generator = SwiftEnumGenerator(enumName: "L10n")
+    
+    @Test("End-to-end generation maintains consistency across all file types")
+    func endToEndGenerationConsistency() throws {
+        let locEntry = LocalizationEntry(view: "settings", item: "privacy", type: "title", translations: ["en": "Privacy Settings", "es": "Configuración de Privacidad"])
+        let colorEntry = ColorEntry(name: "settingsBackground", anyHex: nil, lightHex: "#F5F5F5", darkHex: "#1C1C1E")
         
-        let keys = ["test_key_1", "test.key.1", "test-key-1"]
-        let code = generator.generateCode(allKeys: keys)
+        let enumCode = SwiftEnumGenerator(enumName: "AppStrings").generateCode(allKeys: [locEntry.key])
+        let catalogData = try StringsCatalogGenerator.generate(for: [locEntry], sourceLanguage: "en", developmentRegion: "en")
+        let colorsCode = ColorFileGenerator().generateCode(entries: [colorEntry])
+        let dynamicCode = ColorDynamicFileGenerator().generateCode()
         
-        #expect(code.contains("= \"test_key_1\""), "Original key values should be preserved as enum raw values")
-        #expect(code.contains("= \"test.key.1\""), "Keys with dots should maintain original format in raw values")
-        #expect(code.contains("= \"test-key-1\""), "Keys with hyphens should maintain original format in raw values")
+        #expect(enumCode.contains("enum AppStrings") && enumCode.contains("settingsPrivacyTitle"))
+        #expect(!catalogData.isEmpty)
+        #expect(colorsCode.contains("settingsBackground"))
+        #expect(dynamicCode.contains("extension Color"))
+        
+        let catalog = try JSONSerialization.jsonObject(with: catalogData) as! [String: Any]
+        #expect((catalog["strings"] as! [String: Any])["settings_privacy_title"] != nil)
     }
 }

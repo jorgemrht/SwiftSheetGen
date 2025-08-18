@@ -28,7 +28,7 @@ struct GeneratorHelper {
             }
         }
         
-        logger.warning("No .xcodeproj found in current directory or parent directories.")
+        logger.warning("No valid .xcodeproj found in current directory or parent directories.")
         return nil
     }
 
@@ -38,13 +38,31 @@ struct GeneratorHelper {
         let fileManager = FileManager.default
         let fileURL = URL(fileURLWithPath: path)
 
+        guard fileManager.fileExists(atPath: path) else {
+            logger.debug("File not found, skipping cleanup: \(path, privacy: .public)")
+            return
+        }
+
         do {
-            if fileManager.fileExists(atPath: path) {
+            var isDirectory: ObjCBool = false
+            if fileManager.fileExists(atPath: path, isDirectory: &isDirectory) {
+                if isDirectory.boolValue {
+                    try fileManager.removeItem(at: fileURL)
+                    logger.info("Successfully deleted temporary directory: \(path, privacy: .public)")
+                    return
+                }
+            }
+
+            if fileManager.isDeletableFile(atPath: path) {
                 try fileManager.removeItem(at: fileURL)
                 logger.info("Successfully deleted temporary file: \(path, privacy: .public)")
             } else {
-                logger.debug("File not found, skipping cleanup: \(path, privacy: .public)")
+                logger.warning("File is not deletable: \(path, privacy: .public)")
             }
+        } catch CocoaError.fileWriteFileExists {
+            logger.debug("File deletion conflict (file exists): \(path, privacy: .public)")
+        } catch CocoaError.fileNoSuchFile {
+            logger.debug("File no longer exists: \(path, privacy: .public)")
         } catch {
             logger.error("Failed to delete temporary file: \(error.localizedDescription, privacy: .public)")
         }

@@ -34,6 +34,8 @@ struct StringsCatalogGenerator: Sendable {
         let translatedStringUnit = StringUnit(state: "translated", value: "")
         
         for entry in entries {
+            guard !entry.translations.isEmpty else { continue }
+            
             let translationCount = entry.translations.count
             var localizations: [String: LocalizationValue] = [:]
             localizations.reserveCapacity(translationCount)

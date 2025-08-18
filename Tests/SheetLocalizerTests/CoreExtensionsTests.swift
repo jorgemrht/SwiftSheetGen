@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import os.log
 @testable import CoreExtensions
 
 @Suite
@@ -162,48 +163,63 @@ struct CoreExtensionsTests {
 
     // MARK: - FileManager Extension Tests
 
-    @Test("FileManager.createDirectoryIfNeeded creates directories safely without errors if they already exist")
-    func fileManagerDirectoryCreation() throws {
+    @Test("FileManager extensions handle directory operations safely",
+          arguments: [
+              ("create", true),
+              ("remove", false)
+          ])
+    func fileManagerOperations(operation: String, shouldCreate: Bool) throws {
         let fileManager = FileManager.default
         let tempDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         let testPath = tempDir.appendingPathComponent("testDir").path
 
         try? fileManager.removeItem(at: tempDir)
-        defer {
-            try? fileManager.removeItem(at: tempDir)
-        }
+        defer { try? fileManager.removeItem(at: tempDir) }
 
-        try fileManager.createDirectoryIfNeeded(atPath: testPath)
-        #expect(fileManager.fileExists(atPath: testPath) == true, 
-               "Directory should be created successfully")
-        
-        try fileManager.createDirectoryIfNeeded(atPath: testPath)
-        #expect(fileManager.fileExists(atPath: testPath) == true,
-               "Directory should still exist after second creation attempt")
+        if shouldCreate {
+            try fileManager.createDirectoryIfNeeded(atPath: testPath)
+            #expect(fileManager.fileExists(atPath: testPath))
+            
+            try fileManager.createDirectoryIfNeeded(atPath: testPath)
+            #expect(fileManager.fileExists(atPath: testPath))
+        } else {
+            try fileManager.createDirectoryIfNeeded(atPath: testPath)
+            #expect(fileManager.fileExists(atPath: testPath))
+
+            let removed = try fileManager.safeRemoveItem(atPath: testPath)
+            #expect(removed == true)
+            #expect(fileManager.fileExists(atPath: testPath) == false)
+
+            let removedAgain = try fileManager.safeRemoveItem(atPath: testPath)
+            #expect(removedAgain == false)
+        }
     }
-    
-    @Test("FileManager.safeRemoveItem removes files and directories safely, returning appropriate status")
-    func fileManagerSafeRemoval() throws {
-        let fileManager = FileManager.default
-        let tempDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
-        let testPath = tempDir.appendingPathComponent("testDir").path
 
-        try? fileManager.removeItem(at: tempDir)
-        defer {
-            try? fileManager.removeItem(at: tempDir)
+    // MARK: - Logger Extension Tests
+
+    @Test("Logger extensions support all standard logging levels")
+    func loggerExtensionsBasicFunctionality() {
+        let logger = Logger(subsystem: "com.example.tests", category: "logging")
+        
+        #expect(throws: Never.self) {
+            logger.debug("Debug message test")
+            logger.info("Info message test")
+            logger.notice("Notice message test")
+            logger.warning("Warning message test")
+            logger.error("Error message test")
+            logger.critical("Critical message test")
         }
+    }
 
-        try fileManager.createDirectoryIfNeeded(atPath: testPath)
-        #expect(fileManager.fileExists(atPath: testPath) == true,
-               "Test directory should exist before removal")
-
-        let removed = try fileManager.safeRemoveItem(atPath: testPath)
-        #expect(removed == true, "First removal should return true")
-        #expect(fileManager.fileExists(atPath: testPath) == false,
-               "Directory should no longer exist after removal")
-
-        let removedAgain = try fileManager.safeRemoveItem(atPath: testPath)
-        #expect(removedAgain == false, 
-               "Second removal attempt should return false (file already gone)")
+    @Test("LogPrivacyLevel enumeration provides correct privacy settings",
+          arguments: [
+              ("private", true, false),
+              ("public", false, true),
+              ("invalid", false, true)
+          ])
+    func logPrivacyLevelValidation(input: String, expectedPrivate: Bool, expectedPublic: Bool) {
+        let level = LogPrivacyLevel(from: input)
+        #expect(level.isPrivate == expectedPrivate)
+        #expect(level.isPublic == expectedPublic)
     }
 }

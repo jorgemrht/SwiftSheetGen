@@ -2,7 +2,6 @@ import Testing
 import Foundation
 @testable import SheetLocalizer
 
-
 @Suite
 struct ColorFileGeneratorTests {
     
@@ -80,8 +79,4 @@ struct ColorFileGeneratorTests {
         #expect(code.contains("do not edit"))
         #expect(code.contains("#else") || code.contains("#endif"))
     }
-    
-    
-    
-    
 }

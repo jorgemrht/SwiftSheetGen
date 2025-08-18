@@ -15,6 +15,9 @@ struct GeneratorHelperTests {
         let projectDir = tempDir.appendingPathComponent("TestProject.xcodeproj")
         try FileManager.default.createDirectory(at: projectDir, withIntermediateDirectories: true)
         
+        let pbxprojFile = projectDir.appendingPathComponent("project.pbxproj")
+        try "// !$*UTF8*$!\n{}".write(to: pbxprojFile, atomically: true, encoding: .utf8)
+        
         let originalDir = FileManager.default.currentDirectoryPath
         FileManager.default.changeCurrentDirectoryPath(tempDir.path)
         defer { FileManager.default.changeCurrentDirectoryPath(originalDir) }
@@ -35,6 +38,9 @@ struct GeneratorHelperTests {
         
         let projectDir = tempDir.appendingPathComponent("ParentProject.xcodeproj")
         try FileManager.default.createDirectory(at: projectDir, withIntermediateDirectories: true)
+        
+        let pbxprojFile = projectDir.appendingPathComponent("project.pbxproj")
+        try "// !$*UTF8*$!\n{}".write(to: pbxprojFile, atomically: true, encoding: .utf8)
         
         let subDir = tempDir.appendingPathComponent("subdir")
         try FileManager.default.createDirectory(at: subDir, withIntermediateDirectories: true)
@@ -63,6 +69,9 @@ struct GeneratorHelperTests {
         
         let projectDir = tempDir.appendingPathComponent("DeepProject.xcodeproj")
         try FileManager.default.createDirectory(at: projectDir, withIntermediateDirectories: true)
+        
+        let pbxprojFile = projectDir.appendingPathComponent("project.pbxproj")
+        try "// !$*UTF8*$!\n{}".write(to: pbxprojFile, atomically: true, encoding: .utf8)
         
         // Create exactly 5 levels deep (should still find project)
         var deepDir = tempDir
@@ -213,6 +222,9 @@ struct GeneratorHelperTests {
         let projectDir = tempDir.appendingPathComponent("WorkflowProject.xcodeproj")
         try FileManager.default.createDirectory(at: projectDir, withIntermediateDirectories: true)
         
+        let pbxprojFile = projectDir.appendingPathComponent("project.pbxproj")
+        try "// !$*UTF8*$!\n{}".write(to: pbxprojFile, atomically: true, encoding: .utf8)
+        
         let tempFile = tempDir.appendingPathComponent("temp.csv")
         try "temporary content".write(to: tempFile, atomically: true, encoding: .utf8)
         
@@ -241,6 +253,9 @@ struct GeneratorHelperTests {
         
         let projectDir = tempDir.appendingPathComponent("ErrorProject.xcodeproj")
         try FileManager.default.createDirectory(at: projectDir, withIntermediateDirectories: true)
+        
+        let pbxprojFile = projectDir.appendingPathComponent("project.pbxproj")
+        try "// !$*UTF8*$!\n{}".write(to: pbxprojFile, atomically: true, encoding: .utf8)
         
         try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: tempDir.path)
         

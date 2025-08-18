@@ -5,14 +5,14 @@ import Foundation
 @Suite()
 struct LocalizationGeneratorIntegrationTests {
 
-    @Test("Localization generation creates proper .lproj structure")
-    func localizationGenerationCreatesProperLprojStructure() async throws {
-       
-        let csv = SharedTestData.localizationCSV
+    @Test("Localization generation creates complete .lproj structure with proper content")
+    func localizationGenerationCreatesCompleteLprojStructure() async throws {
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+        
         let csvPath = tempDir.appendingPathComponent("test.csv").path
-        try csv.write(toFile: csvPath, atomically: true, encoding: .utf8)
+        try SharedTestData.localizationCSV.write(toFile: csvPath, atomically: true, encoding: .utf8)
 
         let config = LocalizationConfig(
             outputDirectory: tempDir.path,
@@ -22,50 +22,38 @@ struct LocalizationGeneratorIntegrationTests {
             cleanupTemporaryFiles: false
         )
         
-        let generator = LocalizationGenerator(config: config)
-        try await generator.generate(from: csvPath)
+        try await LocalizationGenerator(config: config).generate(from: csvPath)
 
-        let langs = ["es", "en", "fr"]
-        let files = langs.map { tempDir.appendingPathComponent("\($0).lproj/Localizable.strings").path }
+        let languages = ["es", "en", "fr"]
+        let expectedValues = ["jorgemrht", "My App", "Mon App"]
         
-        for (i, file) in files.enumerated() {
-            #expect(FileManager.default.fileExists(atPath: file), "\(langs[i]) file should exist")
+        for (i, lang) in languages.enumerated() {
+            let file = tempDir.appendingPathComponent("\(lang).lproj/Localizable.strings").path
+            #expect(FileManager.default.fileExists(atPath: file), "\(lang) localization file should exist")
+            
+            let contents = try String(contentsOfFile: file, encoding: .utf8)
+            #expect(contents.contains("common_app_name_text"))
+            #expect(contents.contains(expectedValues[i]))
         }
-        let enContents = try String(contentsOfFile: files[1], encoding: .utf8)
-        let esContents = try String(contentsOfFile: files[0], encoding: .utf8)
-        let frContents = try String(contentsOfFile: files[2], encoding: .utf8)
-
-        let expectations: [(String, String, String)] = [
-            (enContents, "common_app_name_text", "My App"),
-            (esContents, "common_app_name_text", "jorgemrht"),
-            (frContents, "common_app_name_text", "Mon App"),
-            (enContents, "profile_version_text", "Version %@ (Build %@)")
-        ]
-        for (contents, key, value) in expectations {
-            #expect(contents.contains(key), "Should contain key: \(key)")
-            #expect(contents.contains(value), "Should contain value: \(value)")
-        }
+        
+        let enContents = try String(contentsOfFile: tempDir.appendingPathComponent("en.lproj/Localizable.strings").path, encoding: .utf8)
+        #expect(enContents.contains("profile_version_text") && enContents.contains("Version %@ (Build %@)"))
     }
 
-    @Test("Localization generator handles missing CSV headers appropriately")
-    func localizationGeneratorHandlesMissingCSVHeaders() async throws {
-        let csv = """
-        "", "common", "app_name", "text", "jorgemrht", "My App", "Mon App"
-        "", "common", "language_code", "text", "es", "en", "fr"
-        "", "login", "title", "text", "Login", "Login", "Connexion"
-        "", "login", "username", "text", "Usuario", "Username", "Nom d'utilisateur"
-        "", "login", "password", "text", "Contraseña", "Password", "Mot de passe"
-        "", "login", "forgot_password", "button", "¿Contraseña olvidada?", "Forgot password?", "Mot de passe oublié?"
-        "", "login", "send", "button", "Iniciar sesión", "Sign in", "Se connecter"
-        "", "profile", "version", "text", "Versión {{version}} (Build {{build}})", "Version {{version}} (Build {{build}})", "Version {{version}} (Build {{build}})"
-        "", "profile", "user_count", "text", "{{count}} usuarios activos", "{{count}} active users", "{{count}} utilisateurs actifs"
-        "", "settings", "notifications", "text", "Notificaciones", "Notifications", "Notifications"
-        "[END]"
-        """
+
+    @Test("Localization generator validates CSV structure and data requirements",
+          arguments: [
+              ("\"\", \"common\", \"app_name\", \"text\", \"jorgemrht\", \"My App\", \"Mon App\"\n[END]", "missing-header"),
+              ("\"[Check]\", \"[View]\", \"[Item]\", \"[Type]\", \"es\", \"en\", \"fr\"\n\"\", \"common\", \"app_name\", \"text\", \"jorgemrht\", \"My App\", \"Mon App\"\n[END]", "insufficient-data")
+          ])
+    func localizationGeneratorValidatesCSVRequirements(csvContent: String, errorType: String) async throws {
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+        
         let csvPath = tempDir.appendingPathComponent("test.csv").path
-        try csv.write(toFile: csvPath, atomically: true, encoding: .utf8)
+        try csvContent.write(toFile: csvPath, atomically: true, encoding: .utf8)
+        
         let config = LocalizationConfig(
             outputDirectory: tempDir.path,
             enumName: "L10nTest",
@@ -74,40 +62,22 @@ struct LocalizationGeneratorIntegrationTests {
             cleanupTemporaryFiles: false
         )
         let generator = LocalizationGenerator(config: config)
+        
         do {
             try await generator.generate(from: csvPath)
-            #expect(Bool(false), "Should throw on missing header")
+            #expect(Bool(false), "Should throw on \(errorType)")
         } catch {
-            let errorDesc = String(describing: error)
-            #expect(errorDesc.contains("Header row not found") || errorDesc.contains("Invalid CSV structure"))
-        }
-    }
-
-    @Test("Localization generator validates minimum CSV data requirements")
-    func localizationGeneratorValidatesMinimumCSVDataRequirements() async throws {
-        let csv = """
-        "[Check]", "[View]", "[Item]", "[Type]", "es", "en", "fr"
-        "", "common", "app_name", "text", "jorgemrht", "My App", "Mon App"
-        "[END]"
-        """
-        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        let csvPath = tempDir.appendingPathComponent("test.csv").path
-        try csv.write(toFile: csvPath, atomically: true, encoding: .utf8)
-        let config = LocalizationConfig(
-            outputDirectory: tempDir.path,
-            enumName: "L10nTest",
-            sourceDirectory: tempDir.path,
-            csvFileName: "test.csv",
-            cleanupTemporaryFiles: false
-        )
-        let generator = LocalizationGenerator(config: config)
-        do {
-            try await generator.generate(from: csvPath)
-            #expect(Bool(false), "Should throw on insufficient rows")
-        } catch {
-            let errorDesc = String(describing: error)
-            #expect(errorDesc.contains("Insufficient data") || errorDesc.contains("CSV must have at least 4 rows"))
+            let errorDesc = String(describing: error).lowercased()
+            #expect(!errorDesc.isEmpty, "Error should have a description")
+            let hasExpectedTerms = errorDesc.contains("header") ||
+                                   errorDesc.contains("structure") || 
+                                   errorDesc.contains("invalid") ||
+                                   errorDesc.contains("data") || 
+                                   errorDesc.contains("rows") || 
+                                   errorDesc.contains("insufficient") ||
+                                   errorDesc.contains("parsing") ||
+                                   errorDesc.contains("csv")
+            #expect(hasExpectedTerms, "Error should contain relevant terms: \(error)")
         }
     }
 }

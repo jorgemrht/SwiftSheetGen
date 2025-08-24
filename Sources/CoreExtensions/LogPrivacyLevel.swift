@@ -1,6 +1,6 @@
 import Foundation
 
-public enum LogPrivacyLevel: String {
+public enum LogPrivacyLevel: String, Sendable {
     case `public`
     case `private`
 }

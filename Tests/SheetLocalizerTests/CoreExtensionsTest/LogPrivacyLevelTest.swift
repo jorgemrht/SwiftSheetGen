@@ -2,7 +2,7 @@ import Testing
 import Foundation
 @testable import CoreExtensions
 
-@Suite("LogPrivacyLevel Tests")
+@Suite
 struct LogPrivacyLevelTest {
     
     // MARK: - Basic Initialization Tests

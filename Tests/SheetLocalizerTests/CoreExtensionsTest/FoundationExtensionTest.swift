@@ -2,7 +2,7 @@ import Testing
 import Foundation
 @testable import CoreExtensions
 
-@Suite("Foundation Extensions Tests")
+@Suite
 struct FoundationExtensionTest {
     
     // MARK: - String Extension Tests

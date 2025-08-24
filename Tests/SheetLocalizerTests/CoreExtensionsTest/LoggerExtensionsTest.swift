@@ -3,7 +3,7 @@ import Foundation
 import os.log
 @testable import CoreExtensions
 
-@Suite("Logger Extensions Tests")
+@Suite
 struct LoggerExtensionsTest {
     
     // MARK: - Static Logger Configuration Tests

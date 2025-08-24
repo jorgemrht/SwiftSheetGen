@@ -234,6 +234,25 @@ struct FoundationExtensionTest {
         }
     }
     
+    @Test("FileManager.createDirectoryIfNeeded respects createIntermediates parameter")
+    func fileManagerCreateIntermediatesParameter() throws {
+        let fileManager = FileManager.default
+        let tempDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+        let deepPath = tempDir.appendingPathComponent("level1/level2/level3").path
+        
+        try? fileManager.removeItem(at: tempDir)
+        defer { try? fileManager.removeItem(at: tempDir) }
+        
+        try fileManager.createDirectoryIfNeeded(atPath: deepPath, createIntermediates: true)
+        #expect(fileManager.fileExists(atPath: deepPath))
+        
+        try fileManager.removeItem(at: tempDir)
+        
+        #expect(throws: (any Error).self) {
+            try fileManager.createDirectoryIfNeeded(atPath: deepPath, createIntermediates: false)
+        }
+    }
+    
     // MARK: - FileManagerError Tests
     
     @Test("FileManagerError provides descriptive error messages")
@@ -242,7 +261,7 @@ struct FoundationExtensionTest {
         #expect(FileManagerError.pathExistsButNotDirectory.errorDescription == "Path exists but is not a directory")
     }
     
-    // MARK: - Edge Cases and Performance Tests
+    // MARK: - Edge Cases and Additional Coverage Tests
     
     @Test("String extensions handle edge cases correctly")
     func stringExtensionEdgeCases() {
@@ -259,6 +278,48 @@ struct FoundationExtensionTest {
         
         let csvWithUnicode = unicodeString.csvEscaped
         #expect(csvWithUnicode == unicodeString)
+    }
+    
+    @Test("String.isGoogleSheetsURL handles whitespace edge cases")
+    func googleSheetsURLWhitespaceHandling() {
+        let validURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1v123/pubhtml"
+        let urlWithWhitespace = "  \(validURL)  "
+        let urlWithTabs = "\t\(validURL)\t"
+        let urlWithNewlines = "\n\(validURL)\n"
+        
+        #expect(urlWithWhitespace.isGoogleSheetsURL == true)
+        #expect(urlWithTabs.isGoogleSheetsURL == true) 
+        #expect(urlWithNewlines.isGoogleSheetsURL == true)
+    }
+    
+    @Test("String.googleSheetsDocumentID handles malformed URLs")
+    func googleSheetsDocumentIDMalformedURLs() {
+        let malformedURLs = [
+            "https://docs.google.com/spreadsheets/d/e/",
+            "https://docs.google.com/spreadsheets/d/e//pubhtml", 
+            "https://docs.google.com/spreadsheets/d/e/123",
+            "https://docs.google.com/spreadsheets/d/123/pubhtml"
+        ]
+        
+        for url in malformedURLs {
+            #expect(url.googleSheetsDocumentID == nil)
+        }
+    }
+    
+    @Test("String.csvEscaped handles combined special characters")
+    func csvEscapedCombinedSpecialChars() {
+        let complexString = "Hello,\"World\"\nNew Line,\tTab"
+        let escaped = complexString.csvEscaped
+        #expect(escaped == "\"Hello,\"\"World\"\"\nNew Line,\tTab\"")
+        
+        let onlyComma = "Hello,World"
+        #expect(onlyComma.csvEscaped == "\"Hello,World\"")
+        
+        let onlyQuote = "Hello\"World"  
+        #expect(onlyQuote.csvEscaped == "\"Hello\"\"World\"")
+        
+        let onlyNewline = "Hello\nWorld"
+        #expect(onlyNewline.csvEscaped == "\"Hello\nWorld\"")
     }
     
     @Test("Array extensions handle large datasets efficiently")

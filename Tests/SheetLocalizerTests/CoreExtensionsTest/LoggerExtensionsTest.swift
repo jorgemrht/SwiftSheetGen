@@ -148,12 +148,42 @@ struct LoggerExtensionsTest {
     
     // MARK: - Error Handling Tests
     
-    @Test("Logger.logFatal method is available and callable")
+    @Test("Logger.logFatal method exists and has correct signature")
     func loggerFatalMethodAvailability() {
-        _ = Logger(subsystem: "com.test.logger", category: "fatal")
+        let logger = Logger(subsystem: "com.test.logger", category: "fatal")
+        let testError = NSError(domain: "TestError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Test error"])
         
         #expect(throws: Never.self) {
-            _ = NSError(domain: "TestError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Test error"])
+            let _: (String, Error?, Bool) -> Never = logger.logFatal
+        }
+    }
+    
+    @Test("Logger methods handle special character inputs")
+    func loggerSpecialCharacters() {
+        let logger = Logger(subsystem: "com.test.logger", category: "special")
+        let specialChars = "Special: !@#$%^&*()_+-=[]{}|;':\",./<>?"
+        let unicodeChars = "Unicode: 🌍🚀📱💻🎉"
+        
+        #expect(throws: Never.self) {
+            logger.logInfo("Special chars test:", value: specialChars)
+            logger.logError("Unicode test:", value: unicodeChars)
+            logger.logNetworkRequest(url: "https://test.com/path?param=value", method: "POST", statusCode: 201)
+            logger.logFileOperation("SPECIAL", path: "/tmp/file-with-special@chars", size: 1000)
+        }
+    }
+    
+    @Test("Logger methods handle boundary values")
+    func loggerBoundaryValues() {
+        let logger = Logger(subsystem: "com.test.logger", category: "boundary")
+        
+        #expect(throws: Never.self) {
+            logger.logCSVProcessing(rowCount: 0, columnCount: 0, processingTime: 0.0)
+            logger.logNetworkRequest(url: "http://a.co", method: "GET", statusCode: 100)
+            logger.logFileOperation("MIN", path: "/", size: 0)
+            
+            logger.logCSVProcessing(rowCount: Int.max, columnCount: Int.max, processingTime: Double.greatestFiniteMagnitude)
+            logger.logNetworkRequest(url: "https://very-long-domain-name.example.com/very/long/path", method: "DELETE", statusCode: 599)
+            logger.logFileOperation("MAX", path: "/very/very/long/path/to/file", size: Int64.max)
         }
     }
     

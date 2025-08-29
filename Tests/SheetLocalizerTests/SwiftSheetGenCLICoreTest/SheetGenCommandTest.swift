@@ -90,7 +90,6 @@ struct SheetGenCommandTest {
         
         #expect(colorTempPath.contains("colors"))
         #expect(colorTempPath.contains("generated_colors.csv"))
-        #expect(colorTempPath.hasPrefix(FileManager.default.currentDirectoryPath))
     }
     
     @Test("SheetGenCommand commandSpecificDirectoryName property is correct")

@@ -6,7 +6,6 @@ import os.log
 @Suite
 struct LoggerExtensionsTest {
     
-    // MARK: - Static Logger Configuration Tests
     
     @Test("Logger static instances are properly configured and accessible")
     func loggerStaticConfiguration() {
@@ -23,7 +22,6 @@ struct LoggerExtensionsTest {
         }
     }
     
-    // MARK: - Basic Logging Method Tests
     
     @Test("Logger basic logging methods execute without throwing")
     func loggerBasicMethods() {
@@ -39,7 +37,6 @@ struct LoggerExtensionsTest {
         }
     }
     
-    // MARK: - Extended Logging Method Tests
     
     @Test("Logger.logInfo handles both private and public information correctly")
     func loggerLogInfoMethod() {
@@ -103,7 +100,6 @@ struct LoggerExtensionsTest {
         }
     }
     
-    // MARK: - Privacy Parameter Tests
     
     @Test("Logger methods respect privacy settings",
           arguments: [true, false])
@@ -119,7 +115,6 @@ struct LoggerExtensionsTest {
         }
     }
     
-    // MARK: - Edge Case Tests
     
     @Test("Logger methods handle empty and nil values correctly")
     func loggerEdgeCases() {
@@ -146,7 +141,6 @@ struct LoggerExtensionsTest {
         }
     }
     
-    // MARK: - Error Handling Tests
     
     @Test("Logger.logFatal method exists and has correct signature")
     func loggerFatalMethodAvailability() {
@@ -186,7 +180,6 @@ struct LoggerExtensionsTest {
         }
     }
     
-    // MARK: - Performance and Reliability Tests
     
     @Test("Logger methods perform efficiently with concurrent access")
     func loggerConcurrentAccess() async {
@@ -227,7 +220,6 @@ struct LoggerExtensionsTest {
         #expect(Bool(true))
     }
     
-    // MARK: - Integration Tests
     
     @Test("Logger extensions integrate correctly with standard logging")
     func loggerIntegration() {

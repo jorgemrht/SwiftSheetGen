@@ -9,7 +9,6 @@ import os.log
 @Suite
 struct SheetExtensionTest {
     
-    // MARK: - Protocol Conformance Tests
     
     @Test("LocalizationConfig conforms to SheetConfig protocol")
     func localizationConfigSheetConfigConformance() {
@@ -45,7 +44,6 @@ struct SheetExtensionTest {
         #expect(String(describing: type(of: generator)) == "ColorGenerator")
     }
     
-    // MARK: - Google Sheets URL Validation Tests
     
     @Test("AsyncParsableCommand validates correct Google Sheets URLs",
           arguments: [
@@ -123,7 +121,6 @@ struct SheetExtensionTest {
         }
     }
     
-    // MARK: - Directory Management Tests
     
     @Test("AsyncParsableCommand ensures output directory exists for valid paths")
     func asyncParsableCommandOutputDirectoryCreation() throws {
@@ -211,7 +208,6 @@ struct SheetExtensionTest {
         #expect(FileManager.default.fileExists(atPath: deepPath))
     }
     
-    // MARK: - Execution Completion Logging Tests
     
     @Test("AsyncParsableCommand logs successful execution with proper timing")
     func asyncParsableCommandSuccessfulExecutionLogging() {
@@ -304,7 +300,6 @@ struct SheetExtensionTest {
         }
     }
     
-    // MARK: - Log Privacy Level Integration Tests
     
     @Test("AsyncParsableCommand properly integrates LogPrivacyLevel with logging")
     func asyncParsableCommandLogPrivacyLevelIntegration() {
@@ -359,7 +354,6 @@ struct SheetExtensionTest {
         }
     }
     
-    // MARK: - Error Propagation Tests
     
     @Test("AsyncParsableCommand properly creates SheetLocalizerError for file system issues")
     func asyncParsableCommandFileSystemErrorPropagation() {
@@ -398,7 +392,6 @@ struct SheetExtensionTest {
         }
     }
     
-    // MARK: - Path Normalization and Validation Tests
     
     @Test("Directory path handling normalizes whitespace correctly")
     func directoryPathWhitespaceNormalization() throws {
@@ -458,7 +451,6 @@ struct SheetExtensionTest {
         }
     }
     
-    // MARK: - Integration Tests
     
     @Test("Sheet extensions work together in realistic scenarios")
     func sheetExtensionsIntegrationTest() throws {

@@ -6,7 +6,6 @@ import Foundation
 @Suite
 struct SheetConfigTest {
     
-    // MARK: - Protocol Conformance Tests
     
     @Test("LocalizationConfig implements SheetConfig protocol properly")
     func localizationConfigSheetConfigImplementation() {
@@ -50,7 +49,6 @@ struct SheetConfigTest {
         #expect(customConfig.cleanupTemporaryFiles == false)
     }
     
-    // MARK: - Protocol Properties Validation Tests
     
     @Test("SheetConfig protocol properties handle various path formats")
     func sheetConfigPathFormatHandling() {
@@ -139,7 +137,6 @@ struct SheetConfigTest {
         }
     }
     
-    // MARK: - Type Erasure and Generic Context Tests
     
     @Test("SheetConfig protocol works correctly in generic contexts")
     func sheetConfigGenericContextUsage() {
@@ -217,7 +214,6 @@ struct SheetConfigTest {
         #expect(colorProperties.cleanup == true)
     }
     
-    // MARK: - Protocol Implementation Validation Tests
     
     @Test("SheetConfig implementations are consistent across different instances")
     func sheetConfigImplementationConsistency() {
@@ -270,7 +266,6 @@ struct SheetConfigTest {
         }
     }
     
-    // MARK: - Edge Cases and Validation Tests
     
     @Test("SheetConfig protocol handles edge case values properly")
     func sheetConfigEdgeCaseValues() {
@@ -330,7 +325,6 @@ struct SheetConfigTest {
         }
     }
     
-    // MARK: - Performance and Memory Tests
     
     @Test("SheetConfig protocol implementations are memory efficient")
     func sheetConfigMemoryEfficiency() {

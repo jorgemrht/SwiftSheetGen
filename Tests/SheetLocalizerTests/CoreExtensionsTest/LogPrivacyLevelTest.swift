@@ -5,7 +5,6 @@ import Foundation
 @Suite
 struct LogPrivacyLevelTest {
     
-    // MARK: - Basic Initialization Tests
     
     @Test("LogPrivacyLevel initializes from string values correctly",
           arguments: [
@@ -26,7 +25,6 @@ struct LogPrivacyLevelTest {
         #expect(level == expected)
     }
     
-    // MARK: - Property Validation Tests
     
     @Test("LogPrivacyLevel.isPrivate returns correct boolean values",
           arguments: [
@@ -46,7 +44,6 @@ struct LogPrivacyLevelTest {
         #expect(level.isPublic == expectedPublic)
     }
     
-    // MARK: - Consistency Tests
     
     @Test("LogPrivacyLevel properties are mutually exclusive")
     func logPrivacyLevelMutualExclusivity() {
@@ -61,7 +58,6 @@ struct LogPrivacyLevelTest {
         #expect(LogPrivacyLevel.public.rawValue == "public")
     }
     
-    // MARK: - Edge Case Tests
     
     @Test("LogPrivacyLevel handles whitespace and special characters in initialization")
     func logPrivacyLevelWhitespaceHandling() {
@@ -102,7 +98,6 @@ struct LogPrivacyLevelTest {
         }
     }
     
-    // MARK: - Integration Tests
     
     @Test("LogPrivacyLevel works correctly in conditional logic")
     func logPrivacyLevelConditionalLogic() {

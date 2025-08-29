@@ -5,7 +5,6 @@ import Foundation
 @Suite("CSVParser Tests")
 struct CSVParserTest {
     
-    // MARK: - Localization CSV Parsing Tests
     
     @Test("Parse localization CSV with headers and data validation")
     func parseLocalizationCSVStructure() throws {
@@ -13,7 +12,6 @@ struct CSVParserTest {
         
         #expect(result.count > 0)
         
-        // Validate header structure
         let headerRow = result.first { row in
             row.contains("[View]") && row.contains("[Item]") && row.contains("[Type]")
         }
@@ -29,7 +27,6 @@ struct CSVParserTest {
         #expect(header[5] == "en")
         #expect(header[6] == "fr")
         
-        // Validate data rows structure
         let dataRows = result.filter { row in
             !row.isEmpty && 
             row != header &&
@@ -39,7 +36,6 @@ struct CSVParserTest {
         
         #expect(dataRows.count >= 10)
         
-        // Validate first data row content
         let firstDataRow = dataRows[0]
         #expect(firstDataRow[1] == "common") // View
         #expect(firstDataRow[2] == "app_name") // Item
@@ -81,7 +77,6 @@ struct CSVParserTest {
             #expect(row[5].contains("{{build}}"))
         }
         
-        // Test user count template variables
         let userCountRow = result.first { row in
             row.count > 2 && row[2] == "user_count"
         }
@@ -107,7 +102,6 @@ struct CSVParserTest {
         }
     }
     
-    // MARK: - Colors CSV Parsing Tests
     
     @Test("Parse colors CSV structure and data validation")
     func parseColorsCSVStructure() throws {
@@ -115,7 +109,6 @@ struct CSVParserTest {
         
         #expect(result.count > 0)
         
-        // Filter valid color data rows
         let colorRows = result.filter { row in
             row.count >= 6 && 
             !row[1].isEmpty && 
@@ -127,7 +120,6 @@ struct CSVParserTest {
         
         #expect(colorRows.count >= 7)
         
-        // Validate primary background color row structure
         let primaryBgRow = colorRows.first { $0[1] == "primaryBackgroundColor" }
         #expect(primaryBgRow != nil)
         if let row = primaryBgRow {
@@ -166,7 +158,6 @@ struct CSVParserTest {
         }
     }
     
-    // MARK: - Streaming Parser Tests
     
     @Test("Streaming parser for localization CSV")
     func streamingParserLocalizationCSV() async throws {
@@ -215,7 +206,6 @@ struct CSVParserTest {
         #expect(hasColorContent)
     }
     
-    // MARK: - File-based Parser Tests
     
     @Test("File-based parsing for localization CSV")
     func fileParsingLocalizationCSV() async throws {
@@ -251,7 +241,6 @@ struct CSVParserTest {
         #expect(primaryColorRow != nil)
     }
     
-    // MARK: - Parser Error Handling Tests
     
     @Test("Parse to keyed rows error handling")
     func parseToKeyedRowsErrorHandling() throws {
@@ -260,7 +249,6 @@ struct CSVParserTest {
         }
     }
     
-    // MARK: - Column Count Validation Tests
     
     @Test("CSV column count validation")
     func csvColumnCountValidation() throws {
@@ -277,7 +265,6 @@ struct CSVParserTest {
         let validRows = locResult.filter { $0.count == headerColumnCount }
         let totalDataRows = locResult.filter { $0.first != "[END]" }.count
         
-        // Most rows should have consistent column counts
         #expect(validRows.count >= totalDataRows - 2)
     }
  

@@ -6,7 +6,6 @@ import Foundation
 @Suite
 struct SheetGeneratorTest {
     
-    // MARK: - Protocol Definition Tests
     
     @Test("SheetGenerator protocol defines required methods correctly")
     func sheetGeneratorProtocolRequiredMethods() {
@@ -29,7 +28,6 @@ struct SheetGeneratorTest {
         #expect(String(describing: type(of: colorGenerator)).contains("ColorGenerator"))
     }
     
-    // MARK: - Protocol Conformance Tests
     
     @Test("LocalizationGenerator conforms to SheetGenerator protocol")
     func localizationGeneratorProtocolConformance() {
@@ -47,7 +45,6 @@ struct SheetGeneratorTest {
         #expect(String(describing: type(of: generator)) == "ColorGenerator")
     }
     
-    // MARK: - Initialization Tests
     
     @Test("SheetGenerator implementations initialize correctly with default configurations")
     func sheetGeneratorDefaultInitialization() {
@@ -116,7 +113,6 @@ struct SheetGeneratorTest {
         }
     }
     
-    // MARK: - Type System Tests
     
     @Test("SheetGenerator protocol works correctly in generic contexts")
     func sheetGeneratorGenericContextUsage() {
@@ -156,7 +152,6 @@ struct SheetGeneratorTest {
         #expect(validateGenerator(colorGenerator) == true)
     }
     
-    // MARK: - Consistency Tests
     
     @Test("SheetGenerator implementations are consistent across multiple instantiations")
     func sheetGeneratorConsistencyAcrossInstantiations() {
@@ -197,7 +192,6 @@ struct SheetGeneratorTest {
         }
     }
     
-    // MARK: - Edge Case Tests
     
     @Test("SheetGenerator implementations handle edge case configurations")
     func sheetGeneratorEdgeCaseConfigurations() {
@@ -259,7 +253,6 @@ struct SheetGeneratorTest {
         }
     }
     
-    // MARK: - Performance Tests
     
     @Test("SheetGenerator implementations are memory efficient")
     func sheetGeneratorMemoryEfficiency() {
@@ -303,14 +296,12 @@ struct SheetGeneratorTest {
         #expect(Bool(true)) // If we reach here, no crashes occurred during concurrent instantiation
     }
     
-    // MARK: - Integration Tests
     
     @Test("SheetGenerator protocol integrates correctly with SheetConfig protocol")
     func sheetGeneratorSheetConfigIntegration() {
         let locConfig: any SheetConfig = LocalizationConfig.default
         let colorConfig: any SheetConfig = ColorConfig.default
         
-        // Test that we can create generators with type-erased configs
         if let specificLocConfig = locConfig as? LocalizationConfig {
             let generator = LocalizationGenerator(config: specificLocConfig)
             #expect(String(describing: type(of: generator)) == "LocalizationGenerator")
@@ -349,7 +340,6 @@ struct SheetGeneratorTest {
         #expect(generatorInfos[1].type == "ColorGenerator")
     }
     
-    // MARK: - Stability Tests
     
     @Test("SheetGenerator implementations are stable across multiple operations")
     func sheetGeneratorStabilityAcrossOperations() {
@@ -373,12 +363,10 @@ struct SheetGeneratorTest {
         let locGenerator = LocalizationGenerator(config: LocalizationConfig.default)
         let colorGenerator = ColorGenerator(config: ColorConfig.default)
         
-        // Test that generate method exists and has correct signature
         #expect(String(describing: type(of: locGenerator.generate)).contains("(String) async throws -> ()"))
         #expect(String(describing: type(of: colorGenerator.generate)).contains("(String) async throws -> ()"))
     }
     
-    // MARK: - Error Handling Tests (Initialization)
     
     @Test("SheetGenerator implementations handle malformed configurations gracefully")
     func sheetGeneratorMalformedConfigurationHandling() {

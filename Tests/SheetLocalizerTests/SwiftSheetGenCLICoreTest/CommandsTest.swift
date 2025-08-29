@@ -9,7 +9,6 @@ import os.log
 @Suite
 struct CommandsTest {
     
-    // MARK: - LocalizationCommand Tests
     
     @Test("LocalizationCommand configuration validates correctly")
     func localizationCommandConfigurationValidation() {
@@ -116,7 +115,6 @@ struct CommandsTest {
         }
     }
     
-    // MARK: - ColorsCommand Tests
     
     @Test("ColorsCommand configuration validates correctly")
     func colorsCommandConfigurationValidation() {
@@ -173,7 +171,6 @@ struct CommandsTest {
         }
     }
     
-    // MARK: - Command Properties Tests
     
     @Test("Commands compute log privacy level correctly",
           arguments: [
@@ -233,7 +230,6 @@ struct CommandsTest {
         #expect(colorTempPath.hasPrefix(FileManager.default.currentDirectoryPath))
     }
     
-    // MARK: - Configuration Validation Tests
     
     @Test("Commands validate complex configuration scenarios")
     func commandsComplexConfigurationValidation() throws {
@@ -276,7 +272,6 @@ struct CommandsTest {
         #expect(config1.useStringsCatalog == config2.useStringsCatalog)
     }
     
-    // MARK: - Path Handling Tests
     
     @Test("Commands handle whitespace in directory paths properly")
     func commandsWhitespaceInDirectoryPathHandling() throws {
@@ -321,7 +316,6 @@ struct CommandsTest {
         }
     }
     
-    // MARK: - URL Validation Tests
     
     @Test("Commands validate Google Sheets URL format")
     func commandsGoogleSheetsURLValidation() throws {
@@ -354,7 +348,6 @@ struct CommandsTest {
         }
     }
     
-    // MARK: - Directory Management Tests
     
     @Test("Commands ensure output directory exists")
     func commandsOutputDirectoryCreation() throws {
@@ -377,7 +370,6 @@ struct CommandsTest {
         #expect(FileManager.default.fileExists(atPath: testOutputDir))
     }
     
-    // MARK: - Logging Tests
     
     @Test("Commands log successful execution completion properly")
     func commandsSuccessfulExecutionLogging() throws {
@@ -399,7 +391,6 @@ struct CommandsTest {
         }
     }
     
-    // MARK: - Edge Case Tests
     
     @Test("Commands handle empty and minimal configurations")
     func commandsMinimalConfigurationHandling() throws {

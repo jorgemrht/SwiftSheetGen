@@ -5,18 +5,14 @@ import Foundation
 @Suite("LocalizationGenerator Tests")
 struct LocalizationGeneratorTest {
     
-    // MARK: - Test Default Initialization
-    
     @Test("LocalizationGenerator initializes with default config")
-    func localizationGeneratorDefaultInitialization() {
+    func defaultInitialization() {
         let generator = LocalizationGenerator()
-        
-        // Test passes if no exception is thrown during initialization
         #expect(type(of: generator) == LocalizationGenerator.self)
     }
     
     @Test("LocalizationGenerator initializes with custom config")
-    func localizationGeneratorCustomInitialization() {
+    func customInitialization() {
         let config = LocalizationConfig(
             outputDirectory: "/tmp/test",
             enumName: "TestStrings",
@@ -26,12 +22,8 @@ struct LocalizationGeneratorTest {
             useStringsCatalog: false
         )
         let generator = LocalizationGenerator(config: config)
-        
-        // Test passes if no exception is thrown during initialization
         #expect(type(of: generator) == LocalizationGenerator.self)
     }
-    
-    // MARK: - Test CSV Processing
     
     @Test("LocalizationGenerator processes valid CSV successfully")
     func localizationGeneratorProcessesValidCSV() async throws {
@@ -52,11 +44,9 @@ struct LocalizationGeneratorTest {
         let generator = LocalizationGenerator(config: config)
         try await generator.generate(from: csvFile.path)
         
-        // Verify Swift enum file was created
         let enumFile = tempDir.appendingPathComponent("TestStrings.swift")
         #expect(FileManager.default.fileExists(atPath: enumFile.path))
         
-        // Verify localization directories were created
         let esDir = tempDir.appendingPathComponent("es.lproj")
         let enDir = tempDir.appendingPathComponent("en.lproj")
         let frDir = tempDir.appendingPathComponent("fr.lproj")
@@ -65,7 +55,6 @@ struct LocalizationGeneratorTest {
         #expect(FileManager.default.fileExists(atPath: enDir.path))
         #expect(FileManager.default.fileExists(atPath: frDir.path))
         
-        // Verify Localizable.strings files were created
         #expect(FileManager.default.fileExists(atPath: esDir.appendingPathComponent("Localizable.strings").path))
         #expect(FileManager.default.fileExists(atPath: enDir.appendingPathComponent("Localizable.strings").path))
         #expect(FileManager.default.fileExists(atPath: frDir.appendingPathComponent("Localizable.strings").path))
@@ -120,7 +109,6 @@ struct LocalizationGeneratorTest {
         }
     }
     
-    // MARK: - Test Row Processing and Filtering
     
     @Test("LocalizationGenerator filters invalid rows correctly")
     func localizationGeneratorFiltersInvalidRows() async throws {
@@ -156,18 +144,15 @@ struct LocalizationGeneratorTest {
         let enumFile = tempDir.appendingPathComponent("FilteredStrings.swift")
         let enumContent = try String(contentsOf: enumFile, encoding: .utf8)
         
-        // Should contain valid entries
         #expect(enumContent.contains("validEntry"))
         #expect(enumContent.contains("anotherValidEntry"))
         
-        // Should not contain invalid/empty entries
         #expect(!enumContent.contains("skipThis"))
         #expect(!enumContent.contains("Empty"))
         #expect(!enumContent.contains("INVALID"))
         #expect(!enumContent.contains("bracketView"))
     }
     
-    // MARK: - Test Strings Catalog Generation
     
     @Test("LocalizationGenerator generates strings catalog correctly")
     func localizationGeneratorGeneratesStringsCatalog() async throws {
@@ -199,7 +184,6 @@ struct LocalizationGeneratorTest {
         #expect(catalogContent.contains("version"))
         #expect(catalogContent.contains("strings"))
         
-        // Verify it's valid JSON
         #expect(throws: Never.self) {
             try JSONSerialization.jsonObject(with: catalogData)
         }
@@ -236,18 +220,15 @@ struct LocalizationGeneratorTest {
         let catalogData = try Data(contentsOf: catalogFile)
         let catalogContent = String(data: catalogData, encoding: .utf8)!
         
-        // Should contain all languages
         #expect(catalogContent.contains("\"es\""))
         #expect(catalogContent.contains("\"en\""))
         #expect(catalogContent.contains("\"fr\""))
         #expect(catalogContent.contains("\"de\""))
         
-        // Should contain both entries
         #expect(catalogContent.contains("common_greeting_text"))
         #expect(catalogContent.contains("common_goodbye_text"))
     }
     
-    // MARK: - Test Template Variable Processing
     
     @Test("LocalizationGenerator processes template variables correctly")
     func localizationGeneratorProcessesTemplateVariables() async throws {
@@ -279,18 +260,15 @@ struct LocalizationGeneratorTest {
         let esStringsFile = tempDir.appendingPathComponent("es.lproj/Localizable.strings")
         let esContent = try String(contentsOf: esStringsFile, encoding: .utf8)
         
-        // Template variables should be converted to %@
         #expect(esContent.contains("%@"), "Should convert template variables to %@")
         #expect(!esContent.contains("{{"), "Should not contain original template syntax")
         #expect(!esContent.contains("}}"), "Should not contain original template syntax")
         
-        // Verify specific conversions
         #expect(esContent.contains("Hola %@"), "Should convert {{username}} to %@")
         #expect(esContent.contains("Tienes %@ elementos"), "Should convert {{count}} to %@")
         #expect(esContent.contains("%@ tiene %@ mensajes"), "Should convert multiple variables to %@")
     }
     
-    // MARK: - Test Special Characters Handling
     
     @Test("LocalizationGenerator handles special characters correctly")
     func localizationGeneratorHandlesSpecialCharacters() async throws {
@@ -323,14 +301,12 @@ struct LocalizationGeneratorTest {
         let esStringsFile = tempDir.appendingPathComponent("es.lproj/Localizable.strings")
         let esContent = try String(contentsOf: esStringsFile, encoding: .utf8)
         
-        // Should preserve special characters
         #expect(esContent.contains("👋"), "Should preserve emoji characters")
         #expect(esContent.contains("&"), "Should preserve ampersand characters")
         #expect(esContent.contains("ñ"), "Should preserve Spanish characters")
         #expect(esContent.contains("Dice: Hola"), "Should handle quotes correctly")
     }
     
-    // MARK: - Test Output Directory Creation
     
     @Test("LocalizationGenerator creates nested output directories")
     func localizationGeneratorCreatesNestedDirectories() async throws {
@@ -339,7 +315,6 @@ struct LocalizationGeneratorTest {
         
         let nestedOutputDir = tempDir.appendingPathComponent("deeply/nested/output")
         
-        // Verify directories don't exist initially
         #expect(!FileManager.default.fileExists(atPath: nestedOutputDir.path))
         
         let csvFile = tempDir.appendingPathComponent("localization.csv")
@@ -356,7 +331,6 @@ struct LocalizationGeneratorTest {
         let generator = LocalizationGenerator(config: config)
         try await generator.generate(from: csvFile.path)
         
-        // Verify directories were created
         #expect(FileManager.default.fileExists(atPath: nestedOutputDir.path))
         #expect(FileManager.default.fileExists(atPath: nestedOutputDir.appendingPathComponent("NestedTest.swift").path))
         #expect(FileManager.default.fileExists(atPath: nestedOutputDir.appendingPathComponent("es.lproj").path))
@@ -364,7 +338,6 @@ struct LocalizationGeneratorTest {
         #expect(FileManager.default.fileExists(atPath: nestedOutputDir.appendingPathComponent("fr.lproj").path))
     }
     
-    // MARK: - Test Tuist Project Detection
     
     @Test("LocalizationGenerator detects Tuist project correctly")
     func localizationGeneratorDetectsTuistProject() async throws {
@@ -375,7 +348,6 @@ struct LocalizationGeneratorTest {
         FileManager.default.changeCurrentDirectoryPath(tempDir.path)
         defer { FileManager.default.changeCurrentDirectoryPath(originalDir) }
         
-        // Create .tuist-version file to simulate Tuist project
         let tuistVersionFile = tempDir.appendingPathComponent(".tuist-version")
         try "4.0.0".write(to: tuistVersionFile, atomically: true, encoding: .utf8)
         
@@ -392,14 +364,11 @@ struct LocalizationGeneratorTest {
         
         let generator = LocalizationGenerator(config: config)
         
-        // Should complete successfully (Tuist detection doesn't throw errors)
         try await generator.generate(from: csvFile.path)
         
-        // Files should still be generated
         let enumFile = tempDir.appendingPathComponent("TuistTest.swift")
         #expect(FileManager.default.fileExists(atPath: enumFile.path))
         
-        // Language directories should still be created
         let languages = ["es", "en", "fr"]
         for language in languages {
             let langDir = tempDir.appendingPathComponent("\(language).lproj")
@@ -407,7 +376,6 @@ struct LocalizationGeneratorTest {
         }
     }
     
-    // MARK: - Test Cleanup Configuration
     
     @Test("LocalizationGenerator respects cleanup configuration")
     func localizationGeneratorRespectsCleanupConfig() async throws {
@@ -417,7 +385,6 @@ struct LocalizationGeneratorTest {
         let csvFile = tempDir.appendingPathComponent("localization.csv")
         try SharedTestData.localizationCSV.write(to: csvFile, atomically: true, encoding: .utf8)
         
-        // Test with cleanup disabled
         let configNoCleanup = LocalizationConfig(
             outputDirectory: tempDir.path,
             enumName: "NoCleanupTest",
@@ -429,24 +396,20 @@ struct LocalizationGeneratorTest {
         let generatorNoCleanup = LocalizationGenerator(config: configNoCleanup)
         try await generatorNoCleanup.generate(from: csvFile.path)
         
-        // CSV file should still exist
         #expect(FileManager.default.fileExists(atPath: csvFile.path))
         
-        // Generated files should exist
         #expect(FileManager.default.fileExists(atPath: tempDir.appendingPathComponent("NoCleanupTest.swift").path))
         #expect(FileManager.default.fileExists(atPath: tempDir.appendingPathComponent("es.lproj").path))
         #expect(FileManager.default.fileExists(atPath: tempDir.appendingPathComponent("en.lproj").path))
         #expect(FileManager.default.fileExists(atPath: tempDir.appendingPathComponent("fr.lproj").path))
     }
     
-    // MARK: - Test Xcode Integration
     
     @Test("LocalizationGenerator integrates with mock Xcode project")
     func localizationGeneratorXcodeIntegration() async throws {
         let tempDir = SharedTestData.createTempDirectory()
         defer { try? FileManager.default.removeItem(at: tempDir) }
         
-        // Create a mock Xcode project structure
         try SharedTestData.createMockXcodeProject(in: tempDir, name: "TestProject")
         
         let csvFile = tempDir.appendingPathComponent("integration_test.csv")
@@ -463,7 +426,6 @@ struct LocalizationGeneratorTest {
         let generator = LocalizationGenerator(config: config)
         try await generator.generate(from: csvFile.path)
         
-        // Verify files were generated and potentially added to project
         let enumFile = tempDir.appendingPathComponent("IntegrationTest.swift")
         #expect(FileManager.default.fileExists(atPath: enumFile.path))
         

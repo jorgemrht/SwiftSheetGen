@@ -6,7 +6,6 @@ import ArgumentParser
 @Suite
 struct SharedOptionsTest {
     
-    // MARK: - Basic Parsing Tests
     
     @Test("SharedOptions correctly parses valid Google Sheets URLs",
           arguments: [
@@ -53,7 +52,6 @@ struct SharedOptionsTest {
         }
     }
     
-    // MARK: - Flag Variations Tests
     
     @Test("SharedOptions handles verbose flag variations", 
           arguments: [
@@ -76,7 +74,6 @@ struct SharedOptionsTest {
         #expect(options.keepCSV == expectedKeepCSV)
     }
     
-    // MARK: - Path Handling Tests
     
     @Test("SharedOptions handles output directory path normalization",
           arguments: [
@@ -129,7 +126,6 @@ struct SharedOptionsTest {
         }
     }
     
-    // MARK: - Privacy Level Tests
     
     @Test("SharedOptions log privacy level validation",
           arguments: [
@@ -170,7 +166,6 @@ struct SharedOptionsTest {
         }
     }
     
-    // MARK: - Argument Order Tests
     
     @Test("SharedOptions maintains argument order independence")
     func sharedOptionsArgumentOrderIndependence() throws {
@@ -209,7 +204,6 @@ struct SharedOptionsTest {
         }
     }
     
-    // MARK: - Default Values Tests
     
     @Test("SharedOptions default values consistency")
     func sharedOptionsDefaultValueValidation() throws {
@@ -237,7 +231,6 @@ struct SharedOptionsTest {
         }
     }
     
-    // MARK: - Validation Tests
     
     @Test("SharedOptions validates URL parameter types")
     func sharedOptionsURLParameterTypeValidation() throws {
@@ -273,7 +266,6 @@ struct SharedOptionsTest {
         }
     }
     
-    // MARK: - Help and Documentation Tests
     
     @Test("SharedOptions help text accessibility")
     func sharedOptionsHelpDocumentation() {
@@ -297,7 +289,6 @@ struct SharedOptionsTest {
         }
     }
     
-    // MARK: - Performance and Edge Cases
     
     @Test("SharedOptions handles very long argument values")
     func sharedOptionsLongArgumentValues() throws {

@@ -25,7 +25,6 @@ struct GeneratorHelperTest {
         let logger = Logger(subsystem: "test", category: "test")
         let foundPath = try GeneratorHelper.findXcodeProjectPath(logger: logger)
         
-        // Handle path resolution differences (e.g., /private/var vs /var)
         let normalizedFoundPath = foundPath.map { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path }
         let normalizedTempPath = projectDir.deletingLastPathComponent().resolvingSymlinksInPath().path
         #expect(normalizedFoundPath == normalizedTempPath)
@@ -52,10 +51,8 @@ struct GeneratorHelperTest {
         let logger = Logger(subsystem: "test", category: "test")
         let foundPath = try GeneratorHelper.findXcodeProjectPath(logger: logger)
         
-        // Should find project in parent directory
         #expect(foundPath != nil)
         if let foundPath = foundPath {
-            // The found path should be the parent directory containing the .xcodeproj
             let normalizedFoundPath = URL(fileURLWithPath: foundPath).resolvingSymlinksInPath().path
             let normalizedTempPath = tempDir.resolvingSymlinksInPath().path
             #expect(normalizedFoundPath == normalizedTempPath)
@@ -73,7 +70,6 @@ struct GeneratorHelperTest {
         let pbxprojFile = projectDir.appendingPathComponent("project.pbxproj")
         try "// !$*UTF8*$!\n{}".write(to: pbxprojFile, atomically: true, encoding: .utf8)
         
-        // Create exactly 5 levels deep (should still find project)
         var deepDir = tempDir
         for i in 1...4 { // Only 4 levels so we're within the 5-level limit
             deepDir = deepDir.appendingPathComponent("level\(i)")
@@ -87,7 +83,6 @@ struct GeneratorHelperTest {
         let logger = Logger(subsystem: "test", category: "test")
         let foundPath = try GeneratorHelper.findXcodeProjectPath(logger: logger)
         
-        // Should find the project within 5 levels
         #expect(foundPath != nil)
         if let foundPath = foundPath {
             let normalizedFoundPath = URL(fileURLWithPath: foundPath).resolvingSymlinksInPath().path
@@ -235,7 +230,6 @@ struct GeneratorHelperTest {
         let logger = Logger(subsystem: "test", category: "test")
         
         let foundPath = try GeneratorHelper.findXcodeProjectPath(logger: logger)
-        // Handle path resolution differences (e.g., /private/var vs /var)
         let normalizedFoundPath = foundPath.map { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path }
         let normalizedTempPath = projectDir.deletingLastPathComponent().resolvingSymlinksInPath().path
         #expect(normalizedFoundPath == normalizedTempPath)

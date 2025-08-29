@@ -9,7 +9,6 @@ import os.log
 @Suite
 struct SheetGenCommandTest {
     
-    // MARK: - Protocol Definition Tests
     
     @Test("SheetGenCommand protocol defines required methods correctly")
     func sheetGenCommandProtocolRequiredMethods() {
@@ -26,7 +25,6 @@ struct SheetGenCommandTest {
         #expect(String(describing: type(of: colorCommand)) == "ColorsCommand")
     }
     
-    // MARK: - Common Properties Tests
     
     @Test("SheetGenCommand logPrivacy property works correctly",
           arguments: [
@@ -101,7 +99,6 @@ struct SheetGenCommandTest {
         #expect(colorCommand.commandSpecificDirectoryName == "Colors")
     }
     
-    // MARK: - URL Validation Tests
     
     @Test("SheetGenCommand validateAndLogGoogleSheetsURL works correctly")
     func sheetGenCommandGoogleSheetsURLValidation() throws {
@@ -135,7 +132,6 @@ struct SheetGenCommandTest {
         }
     }
     
-    // MARK: - Configuration Creation Tests
     
     @Test("SheetGenCommand createConfiguration works for LocalizationCommand")
     func sheetGenCommandLocalizationConfigurationCreation() throws {
@@ -168,7 +164,6 @@ struct SheetGenCommandTest {
         #expect(config.csvFileName == "generated_colors.csv")
     }
     
-    // MARK: - Generator Creation Tests
     
     @Test("SheetGenCommand createGenerator works correctly")
     func sheetGenCommandGeneratorCreation() throws {
@@ -185,7 +180,6 @@ struct SheetGenCommandTest {
         #expect(String(describing: type(of: colorGenerator)) == "ColorGenerator")
     }
     
-    // MARK: - Logging Configuration Tests
     
     @Test("SheetGenCommand logConfigurationDetailsIfVerbose respects verbose flag")
     func sheetGenCommandVerboseLogging() throws {
@@ -225,7 +219,6 @@ struct SheetGenCommandTest {
         }
     }
     
-    // MARK: - Workflow Steps Tests (without actual execution)
     
     @Test("SheetGenCommand workflow methods are accessible and callable")
     func sheetGenCommandWorkflowMethodAccessibility() throws {
@@ -265,7 +258,6 @@ struct SheetGenCommandTest {
         }
     }
     
-    // MARK: - Error Handling Tests
     
     @Test("SheetGenCommand handles invalid configuration gracefully")
     func sheetGenCommandInvalidConfigurationHandling() {
@@ -293,7 +285,6 @@ struct SheetGenCommandTest {
         }
     }
     
-    // MARK: - Integration Tests
     
     @Test("SheetGenCommand integrates properly with SheetConfig and SheetGenerator protocols")
     func sheetGenCommandProtocolIntegration() throws {
@@ -348,7 +339,6 @@ struct SheetGenCommandTest {
         }
     }
     
-    // MARK: - Performance and Edge Case Tests
     
     @Test("SheetGenCommand handles complex argument combinations efficiently")
     func sheetGenCommandComplexArgumentCombinations() throws {

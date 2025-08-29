@@ -68,7 +68,6 @@ public enum SharedTestData {
         try FileManager.default.createDirectory(at: projectDir, withIntermediateDirectories: true)
         
         let pbxprojContent = """
-        // !$*UTF8*$!
         {
         	archiveVersion = 1;
         	classes = {

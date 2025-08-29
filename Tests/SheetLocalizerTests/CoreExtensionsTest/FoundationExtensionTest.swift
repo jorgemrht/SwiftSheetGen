@@ -5,7 +5,6 @@ import Foundation
 @Suite
 struct FoundationExtensionTest {
     
-    // MARK: - String Extension Tests
     
     @Test("String.isEmptyOrWhitespace correctly identifies empty and whitespace-only strings",
           arguments: [
@@ -119,7 +118,6 @@ struct FoundationExtensionTest {
         #expect(key.invalidLocalizationKeyReason == expectedReason)
     }
     
-    // MARK: - Array Extension Tests
     
     @Test("Array.csvRow formats string arrays as properly escaped CSV rows")
     func arrayCsvRowFormatting() {
@@ -163,7 +161,6 @@ struct FoundationExtensionTest {
         #expect(mixedRows.csvContent == expectedMixed)
     }
     
-    // MARK: - FileManager Extension Tests
     
     @Test("FileManager.createDirectoryIfNeeded creates directories safely")
     func fileManagerDirectoryCreation() throws {
@@ -253,7 +250,6 @@ struct FoundationExtensionTest {
         }
     }
     
-    // MARK: - FileManagerError Tests
     
     @Test("FileManagerError provides descriptive error messages")
     func fileManagerErrorMessages() {
@@ -261,7 +257,6 @@ struct FoundationExtensionTest {
         #expect(FileManagerError.pathExistsButNotDirectory.errorDescription == "Path exists but is not a directory")
     }
     
-    // MARK: - Edge Cases and Additional Coverage Tests
     
     @Test("String extensions handle edge cases correctly")
     func stringExtensionEdgeCases() {

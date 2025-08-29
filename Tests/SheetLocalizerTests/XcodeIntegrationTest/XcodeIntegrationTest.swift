@@ -6,7 +6,6 @@ import Foundation
 @Suite
 struct XcodeIntegrationTest {
     
-    // MARK: - FileToAdd Tests
     
     @Test("FileToAdd initializes correctly with various file types")
     func fileToAddInitialization() {
@@ -43,7 +42,6 @@ struct XcodeIntegrationTest {
         }
     }
     
-    // MARK: - FileType Tests
     
     @Test("FileType has correct raw values and build phases")
     func fileTypeConfiguration() {
@@ -79,7 +77,6 @@ struct XcodeIntegrationTest {
         #expect(allCases.contains(.other))
     }
     
-    // MARK: - BuildPhase Tests
     
     @Test("BuildPhase has correct section names")
     func buildPhaseSectionNames() {
@@ -107,7 +104,6 @@ struct XcodeIntegrationTest {
         #expect(allCases.contains(.copyFiles))
     }
     
-    // MARK: - IntegrationError Tests
     
     @Test("IntegrationError provides correct error descriptions")
     func integrationErrorDescriptions() {
@@ -135,7 +131,6 @@ struct XcodeIntegrationTest {
         #expect(integrationError.errorDescription == "Failed to process file test.swift: Test error")
     }
     
-    // MARK: - Public Interface Validation Tests
     
     @Test("Public interface methods handle empty project path")
     func publicInterfaceEmptyProjectPath() async {
@@ -198,7 +193,6 @@ struct XcodeIntegrationTest {
         }
     }
     
-    // MARK: - Project Structure Creation Tests
     
     @Test("Localization files integration creates correct FileToAdd structures")
     func localizationFilesIntegration() {
@@ -225,7 +219,6 @@ struct XcodeIntegrationTest {
         
         expectedFiles.append(XcodeIntegration.FileToAdd(path: enumFile, fileType: .swift))
         
-        // Verify structure
         #expect(expectedFiles.count == 4)
         #expect(expectedFiles[0].language == "en")
         #expect(expectedFiles[1].language == "es")
@@ -266,7 +259,6 @@ struct XcodeIntegrationTest {
         #expect(expectedFile.language == nil)
     }
     
-    // MARK: - File Path Processing Tests
     
     @Test("File path processing handles various input formats")
     func filePathProcessing() {
@@ -286,13 +278,11 @@ struct XcodeIntegrationTest {
         }
     }
     
-    // MARK: - Type Safety and Protocol Conformance Tests
     
     @Test("FileToAdd conforms to Sendable protocol")
     func fileToAddSendableConformance() {
         let file = XcodeIntegration.FileToAdd(path: "test.swift", fileType: .swift)
         
-        // Verify we can use it in async contexts
         Task {
             let _ = file
         }
@@ -343,7 +333,6 @@ struct XcodeIntegrationTest {
         }
     }
     
-    // MARK: - Edge Case Tests
     
     @Test("FileToAdd handles edge case file names and paths")
     func fileToAddEdgeCases() {
@@ -402,7 +391,6 @@ struct XcodeIntegrationTest {
         }
     }
     
-    // MARK: - Performance Tests
     
     @Test("FileToAdd creation is memory efficient")
     func fileToAddMemoryEfficiency() {
@@ -442,7 +430,6 @@ struct XcodeIntegrationTest {
         #expect(buildPhases.count == 500)
     }
     
-    // MARK: - Concurrent Access Tests
     
     @Test("Types are safe for concurrent access")
     func concurrentTypeSafety() async {
@@ -465,7 +452,6 @@ struct XcodeIntegrationTest {
         }
     }
     
-    // MARK: - Helper Methods
     
     private func createTempTestDirectory() -> String {
         let tempDir = NSTemporaryDirectory()

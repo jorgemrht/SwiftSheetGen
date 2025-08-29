@@ -151,7 +151,6 @@ struct LoggerExtensionsTest {
     @Test("Logger.logFatal method exists and has correct signature")
     func loggerFatalMethodAvailability() {
         let logger = Logger(subsystem: "com.test.logger", category: "fatal")
-        let testError = NSError(domain: "TestError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Test error"])
         
         #expect(throws: Never.self) {
             let _: (String, Error?, Bool) -> Never = logger.logFatal

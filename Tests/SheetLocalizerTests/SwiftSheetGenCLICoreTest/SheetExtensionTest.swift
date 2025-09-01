@@ -10,7 +10,7 @@ import os.log
 struct SheetExtensionTest {
     
     
-    @Test("LocalizationConfig conforms to SheetConfig protocol")
+    @Test
     func localizationConfigSheetConfigConformance() {
         let config = LocalizationConfig.default
         
@@ -19,7 +19,7 @@ struct SheetExtensionTest {
         #expect(config.cleanupTemporaryFiles == true)
     }
     
-    @Test("ColorConfig conforms to SheetConfig protocol")
+    @Test
     func colorConfigSheetConfigConformance() {
         let config = ColorConfig.default
         
@@ -28,7 +28,7 @@ struct SheetExtensionTest {
         #expect(config.cleanupTemporaryFiles == true)
     }
     
-    @Test("LocalizationGenerator conforms to SheetGenerator protocol")
+    @Test
     func localizationGeneratorSheetGeneratorConformance() {
         let config = LocalizationConfig.default
         let generator = LocalizationGenerator(config: config)
@@ -36,7 +36,7 @@ struct SheetExtensionTest {
         #expect(String(describing: type(of: generator)) == "LocalizationGenerator")
     }
     
-    @Test("ColorGenerator conforms to SheetGenerator protocol")
+    @Test
     func colorGeneratorSheetGeneratorConformance() {
         let config = ColorConfig.default
         let generator = ColorGenerator(config: config)
@@ -84,7 +84,7 @@ struct SheetExtensionTest {
         #expect(isValid == false)
     }
     
-    @Test("Google Sheets URL validation handles edge cases properly")
+    @Test
     func googleSheetsURLValidationEdgeCases() {
         let command = LocalizationCommand()
         
@@ -98,7 +98,7 @@ struct SheetExtensionTest {
         #expect(command.validateGoogleSheetsURL(malformedURL) == false)
     }
     
-    @Test("Google Sheets URL validation handles complex patterns")
+    @Test
     func googleSheetsURLValidationComplexPatterns() {
         let command = LocalizationCommand()
         
@@ -122,7 +122,7 @@ struct SheetExtensionTest {
     }
     
     
-    @Test("AsyncParsableCommand ensures output directory exists for valid paths")
+    @Test
     func asyncParsableCommandOutputDirectoryCreation() throws {
         let tempDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         let testPath = tempDir.appendingPathComponent("test_output").path
@@ -144,7 +144,7 @@ struct SheetExtensionTest {
         }
     }
     
-    @Test("AsyncParsableCommand handles directory creation errors gracefully")
+    @Test
     func asyncParsableCommandDirectoryCreationErrorHandling() {
         let command = ColorsCommand()
         
@@ -160,7 +160,7 @@ struct SheetExtensionTest {
         }
     }
     
-    @Test("AsyncParsableCommand handles directory paths with special characters")
+    @Test
     func asyncParsableCommandSpecialCharactersInPaths() throws {
         let tempBaseDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         
@@ -190,7 +190,7 @@ struct SheetExtensionTest {
         }
     }
     
-    @Test("AsyncParsableCommand handles nested directory creation")
+    @Test
     func asyncParsableCommandNestedDirectoryCreation() throws {
         let tempBaseDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         
@@ -209,7 +209,7 @@ struct SheetExtensionTest {
     }
     
     
-    @Test("AsyncParsableCommand logs successful execution with proper timing")
+    @Test
     func asyncParsableCommandSuccessfulExecutionLogging() {
         let command = LocalizationCommand()
         let startTime = Date().addingTimeInterval(-5.0)
@@ -228,7 +228,7 @@ struct SheetExtensionTest {
         }
     }
     
-    @Test("AsyncParsableCommand handles execution timing edge cases")
+    @Test
     func asyncParsableCommandExecutionTimingEdgeCases() {
         let command = ColorsCommand()
         let location = "/test/location"
@@ -261,7 +261,7 @@ struct SheetExtensionTest {
         }
     }
     
-    @Test("AsyncParsableCommand handles special characters in file locations during logging")
+    @Test
     func asyncParsableCommandSpecialCharactersInLogging() {
         let command = LocalizationCommand()
         let startTime = Date().addingTimeInterval(-2.0)
@@ -285,7 +285,7 @@ struct SheetExtensionTest {
         }
     }
     
-    @Test("AsyncParsableCommand handles very long execution times")
+    @Test
     func asyncParsableCommandLongExecutionTimes() {
         let command = LocalizationCommand()
         let veryOldStartTime = Date().addingTimeInterval(-86400.0) // 1 day ago
@@ -301,7 +301,7 @@ struct SheetExtensionTest {
     }
     
     
-    @Test("AsyncParsableCommand properly integrates LogPrivacyLevel with logging")
+    @Test
     func asyncParsableCommandLogPrivacyLevelIntegration() {
         let testCases: [(input: String, expectedIsPrivate: Bool)] = [
             ("public", false),
@@ -324,7 +324,7 @@ struct SheetExtensionTest {
         }
     }
     
-    @Test("AsyncParsableCommand respects privacy levels in logging calls")
+    @Test
     func asyncParsableCommandPrivacyLevelRespected() {
         let command = LocalizationCommand()
         let startTime = Date()
@@ -355,7 +355,7 @@ struct SheetExtensionTest {
     }
     
     
-    @Test("AsyncParsableCommand properly creates SheetLocalizerError for file system issues")
+    @Test
     func asyncParsableCommandFileSystemErrorPropagation() {
         let command = LocalizationCommand()
         let impossiblePath = "/dev/null/impossible/path"
@@ -375,7 +375,7 @@ struct SheetExtensionTest {
         }
     }
     
-    @Test("AsyncParsableCommand handles file system permissions gracefully")
+    @Test
     func asyncParsableCommandFileSystemPermissions() {
         let command = ColorsCommand()
         let restrictedPaths = [
@@ -393,7 +393,7 @@ struct SheetExtensionTest {
     }
     
     
-    @Test("Directory path handling normalizes whitespace correctly")
+    @Test
     func directoryPathWhitespaceNormalization() throws {
         let tempDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         
@@ -420,7 +420,7 @@ struct SheetExtensionTest {
         }
     }
     
-    @Test("Directory path handling handles relative paths correctly")
+    @Test
     func directoryPathRelativePathHandling() throws {
         let tempDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         
@@ -452,7 +452,7 @@ struct SheetExtensionTest {
     }
     
     
-    @Test("Sheet extensions work together in realistic scenarios")
+    @Test
     func sheetExtensionsIntegrationTest() throws {
         let tempDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: tempDir) }

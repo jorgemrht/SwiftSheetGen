@@ -119,7 +119,7 @@ struct FoundationExtensionTest {
     }
     
     
-    @Test("Array.csvRow formats string arrays as properly escaped CSV rows")
+    @Test
     func arrayCsvRowFormatting() {
         let simpleRow = ["hello", "world"]
         #expect(simpleRow.csvRow == "hello,world")
@@ -135,7 +135,7 @@ struct FoundationExtensionTest {
         #expect(singleRow.csvRow == "single")
     }
     
-    @Test("Array.csvContent converts 2D string arrays to complete CSV format")
+    @Test
     func arrayCsvContentGeneration() {
         let basicRows = [
             ["h1", "h2"],
@@ -162,7 +162,7 @@ struct FoundationExtensionTest {
     }
     
     
-    @Test("FileManager.createDirectoryIfNeeded creates directories safely")
+    @Test
     func fileManagerDirectoryCreation() throws {
         let fileManager = FileManager.default
         let tempDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
@@ -178,7 +178,7 @@ struct FoundationExtensionTest {
         #expect(fileManager.fileExists(atPath: testPath))
     }
     
-    @Test("FileManager.safeRemoveItem removes files and directories safely")
+    @Test
     func fileManagerSafeRemoval() throws {
         let fileManager = FileManager.default
         let tempDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
@@ -198,7 +198,7 @@ struct FoundationExtensionTest {
         #expect(removedAgain == false)
     }
     
-    @Test("FileManager extensions handle invalid paths appropriately")
+    @Test
     func fileManagerInvalidPaths() {
         let fileManager = FileManager.default
         
@@ -211,7 +211,7 @@ struct FoundationExtensionTest {
         }
     }
     
-    @Test("FileManager extensions handle path conflicts appropriately")
+    @Test
     func fileManagerPathConflicts() throws {
         let fileManager = FileManager.default
         let tempDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
@@ -231,7 +231,7 @@ struct FoundationExtensionTest {
         }
     }
     
-    @Test("FileManager.createDirectoryIfNeeded respects createIntermediates parameter")
+    @Test
     func fileManagerCreateIntermediatesParameter() throws {
         let fileManager = FileManager.default
         let tempDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
@@ -251,14 +251,14 @@ struct FoundationExtensionTest {
     }
     
     
-    @Test("FileManagerError provides descriptive error messages")
+    @Test
     func fileManagerErrorMessages() {
         #expect(FileManagerError.invalidPath.errorDescription == "The provided path is invalid or empty")
         #expect(FileManagerError.pathExistsButNotDirectory.errorDescription == "Path exists but is not a directory")
     }
     
     
-    @Test("String extensions handle edge cases correctly")
+    @Test
     func stringExtensionEdgeCases() {
         let veryLongString = String(repeating: "a", count: 10000)
         #expect(!veryLongString.isEmptyOrWhitespace)
@@ -275,7 +275,7 @@ struct FoundationExtensionTest {
         #expect(csvWithUnicode == unicodeString)
     }
     
-    @Test("String.isGoogleSheetsURL handles whitespace edge cases")
+    @Test
     func googleSheetsURLWhitespaceHandling() {
         let validURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1v123/pubhtml"
         let urlWithWhitespace = "  \(validURL)  "
@@ -287,7 +287,7 @@ struct FoundationExtensionTest {
         #expect(urlWithNewlines.isGoogleSheetsURL == true)
     }
     
-    @Test("String.googleSheetsDocumentID handles malformed URLs")
+    @Test
     func googleSheetsDocumentIDMalformedURLs() {
         let malformedURLs = [
             "https://docs.google.com/spreadsheets/d/e/",
@@ -301,7 +301,7 @@ struct FoundationExtensionTest {
         }
     }
     
-    @Test("String.csvEscaped handles combined special characters")
+    @Test
     func csvEscapedCombinedSpecialChars() {
         let complexString = "Hello,\"World\"\nNew Line,\tTab"
         let escaped = complexString.csvEscaped
@@ -317,7 +317,7 @@ struct FoundationExtensionTest {
         #expect(onlyNewline.csvEscaped == "\"Hello\nWorld\"")
     }
     
-    @Test("Array extensions handle large datasets efficiently")
+    @Test
     func arrayExtensionPerformance() {
         let largeRow = Array(0..<1000).map { "item\($0)" }
         let result = largeRow.csvRow

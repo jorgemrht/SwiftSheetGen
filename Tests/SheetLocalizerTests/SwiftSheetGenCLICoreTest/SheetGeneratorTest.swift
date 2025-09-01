@@ -7,7 +7,7 @@ import Foundation
 struct SheetGeneratorTest {
     
     
-    @Test("SheetGenerator protocol defines required methods correctly")
+    @Test
     func sheetGeneratorProtocolRequiredMethods() {
         let locGenerator = LocalizationGenerator(config: LocalizationConfig.default)
         let colorGenerator = ColorGenerator(config: ColorConfig.default)
@@ -16,7 +16,7 @@ struct SheetGeneratorTest {
         #expect(String(describing: type(of: colorGenerator)) == "ColorGenerator")
     }
     
-    @Test("SheetGenerator protocol defines required associated types correctly")
+    @Test
     func sheetGeneratorProtocolAssociatedTypes() {
         let locConfig = LocalizationConfig.default
         let colorConfig = ColorConfig.default
@@ -29,7 +29,7 @@ struct SheetGeneratorTest {
     }
     
     
-    @Test("LocalizationGenerator conforms to SheetGenerator protocol")
+    @Test
     func localizationGeneratorProtocolConformance() {
         let config = LocalizationConfig.default
         let generator = LocalizationGenerator(config: config)
@@ -37,7 +37,7 @@ struct SheetGeneratorTest {
         #expect(String(describing: type(of: generator)) == "LocalizationGenerator")
     }
     
-    @Test("ColorGenerator conforms to SheetGenerator protocol")
+    @Test
     func colorGeneratorProtocolConformance() {
         let config = ColorConfig.default
         let generator = ColorGenerator(config: config)
@@ -46,7 +46,7 @@ struct SheetGeneratorTest {
     }
     
     
-    @Test("SheetGenerator implementations initialize correctly with default configurations")
+    @Test
     func sheetGeneratorDefaultInitialization() {
         let locConfig = LocalizationConfig.default
         let colorConfig = ColorConfig.default
@@ -57,7 +57,7 @@ struct SheetGeneratorTest {
         }
     }
     
-    @Test("SheetGenerator implementations initialize correctly with custom configurations")
+    @Test
     func sheetGeneratorCustomInitialization() {
         let customLocConfig = LocalizationConfig.custom(
             outputDirectory: "/custom/localization",
@@ -81,7 +81,7 @@ struct SheetGeneratorTest {
         }
     }
     
-    @Test("SheetGenerator implementations handle various configuration combinations")
+    @Test
     func sheetGeneratorConfigurationCombinations() {
         let configurations: [(outputDir: String, csvFile: String, cleanup: Bool)] = [
             ("./default", "test.csv", true),
@@ -114,7 +114,7 @@ struct SheetGeneratorTest {
     }
     
     
-    @Test("SheetGenerator protocol works correctly in generic contexts")
+    @Test
     func sheetGeneratorGenericContextUsage() {
         func createGenerator<G: SheetGenerator>(_ generatorType: G.Type, config: G.Config) -> G {
             return G(config: config)
@@ -130,7 +130,7 @@ struct SheetGeneratorTest {
         #expect(String(describing: type(of: colorGenerator)) == "ColorGenerator")
     }
     
-    @Test("SheetGenerator protocol associated types work correctly")
+    @Test
     func sheetGeneratorAssociatedTypesUsage() {
         let locGenerator = LocalizationGenerator(config: LocalizationConfig.default)
         let colorGenerator = ColorGenerator(config: ColorConfig.default)
@@ -139,7 +139,7 @@ struct SheetGeneratorTest {
         #expect(String(describing: type(of: colorGenerator)).contains("Generator"))
     }
     
-    @Test("SheetGenerator protocol type constraints work correctly")
+    @Test
     func sheetGeneratorTypeConstraints() {
         func validateGenerator<G: SheetGenerator>(_ generator: G) -> Bool where G.Config: SheetConfig {
             return String(describing: type(of: generator)).contains("Generator")
@@ -153,7 +153,7 @@ struct SheetGeneratorTest {
     }
     
     
-    @Test("SheetGenerator implementations are consistent across multiple instantiations")
+    @Test
     func sheetGeneratorConsistencyAcrossInstantiations() {
         let config1 = LocalizationConfig.default
         let config2 = LocalizationConfig.default
@@ -172,7 +172,7 @@ struct SheetGeneratorTest {
         #expect(String(describing: type(of: colorGenerator1)) == String(describing: type(of: colorGenerator2)))
     }
     
-    @Test("SheetGenerator implementations maintain configuration consistency")
+    @Test
     func sheetGeneratorConfigurationConsistency() {
         let testConfigurations = [
             LocalizationConfig.default,
@@ -193,7 +193,7 @@ struct SheetGeneratorTest {
     }
     
     
-    @Test("SheetGenerator implementations handle edge case configurations")
+    @Test
     func sheetGeneratorEdgeCaseConfigurations() {
         let edgeCaseConfigurations: [(outputDir: String, csvFile: String)] = [
             ("", ""),
@@ -223,7 +223,7 @@ struct SheetGeneratorTest {
         }
     }
     
-    @Test("SheetGenerator implementations handle special characters in configurations")
+    @Test
     func sheetGeneratorSpecialCharactersInConfigurations() {
         let specialCharConfigurations: [(outputDir: String, csvFile: String)] = [
             ("/path with spaces", "file with spaces.csv"),
@@ -254,7 +254,7 @@ struct SheetGeneratorTest {
     }
     
     
-    @Test("SheetGenerator implementations are memory efficient")
+    @Test
     func sheetGeneratorMemoryEfficiency() {
         var generators: [Any] = []
         
@@ -279,7 +279,7 @@ struct SheetGeneratorTest {
         #expect(generators.count == 2000)
     }
     
-    @Test("SheetGenerator implementations handle concurrent instantiation")
+    @Test
     func sheetGeneratorConcurrentInstantiation() async {
         await withTaskGroup(of: Void.self) { group in
             for _ in 0..<10 {
@@ -297,7 +297,7 @@ struct SheetGeneratorTest {
     }
     
     
-    @Test("SheetGenerator protocol integrates correctly with SheetConfig protocol")
+    @Test
     func sheetGeneratorSheetConfigIntegration() {
         let locConfig: any SheetConfig = LocalizationConfig.default
         let colorConfig: any SheetConfig = ColorConfig.default
@@ -313,7 +313,7 @@ struct SheetGeneratorTest {
         }
     }
     
-    @Test("SheetGenerator implementations work with heterogeneous collections")
+    @Test
     func sheetGeneratorHeterogeneousCollections() {
         struct GeneratorInfo {
             let name: String
@@ -341,7 +341,7 @@ struct SheetGeneratorTest {
     }
     
     
-    @Test("SheetGenerator implementations are stable across multiple operations")
+    @Test
     func sheetGeneratorStabilityAcrossOperations() {
         let config = LocalizationConfig.default
         
@@ -358,7 +358,7 @@ struct SheetGeneratorTest {
         }
     }
     
-    @Test("SheetGenerator protocol method signatures are consistent")
+    @Test
     func sheetGeneratorMethodSignatureConsistency() {
         let locGenerator = LocalizationGenerator(config: LocalizationConfig.default)
         let colorGenerator = ColorGenerator(config: ColorConfig.default)
@@ -368,7 +368,7 @@ struct SheetGeneratorTest {
     }
     
     
-    @Test("SheetGenerator implementations handle malformed configurations gracefully")
+    @Test
     func sheetGeneratorMalformedConfigurationHandling() {
         let malformedConfigurations: [(outputDir: String, csvFile: String)] = [
             ("", ""),

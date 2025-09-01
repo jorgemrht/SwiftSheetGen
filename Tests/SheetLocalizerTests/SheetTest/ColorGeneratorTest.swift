@@ -5,20 +5,20 @@ import Foundation
 @Suite("ColorGenerator Tests")
 struct ColorGeneratorTest {
     
-    @Test("ColorGenerator initializes with default config")
+    @Test
     func defaultInitialization() {
         let generator = ColorGenerator()
         #expect(type(of: generator) == ColorGenerator.self)
     }
     
-    @Test("ColorGenerator initializes with custom config")
+    @Test
     func customInitialization() {
         let config = ColorConfig(outputDirectory: "/tmp/test", cleanupTemporaryFiles: true)
         let generator = ColorGenerator(config: config)
         #expect(type(of: generator) == ColorGenerator.self)
     }
     
-    @Test("ColorGenerator processes valid CSV successfully")
+    @Test
     func processesValidCSV() async throws {
         let tempDir = SharedTestData.createTempDirectory()
         defer { try? FileManager.default.removeItem(at: tempDir) }
@@ -67,7 +67,7 @@ struct ColorGeneratorTest {
         }
     }
     
-    @Test("ColorGenerator creates output directory when needed")
+    @Test
     func createsOutputDirectory() async throws {
         let tempDir = SharedTestData.createTempDirectory()
         defer { try? FileManager.default.removeItem(at: tempDir) }

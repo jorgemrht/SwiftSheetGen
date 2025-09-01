@@ -31,7 +31,7 @@ struct SwiftEnumGeneratorTest {
         }
     }
     
-    @Test("Generated enum includes all required localization methods")
+    @Test
     func includesLocalizationMethods() {
         let generator = SwiftEnumGenerator(enumName: "TestEnum")
         let result = generator.generateCode(allKeys: ["test_key"])
@@ -75,8 +75,8 @@ struct SwiftEnumGeneratorTest {
         }
     }
     
-    @Test("Identifier sanitization converts invalid characters to valid Swift identifiers")
-    func sanitizesInvalidIdentifiers() {
+    @Test
+    func validatesInvalidIdentifiers() {
         let generator = SwiftEnumGenerator(enumName: "TestEnum")
         
         let testCases: [(input: String, expectedPattern: String)] = [
@@ -97,7 +97,7 @@ struct SwiftEnumGeneratorTest {
         }
     }
     
-    @Test("Identifier sanitization produces valid camelCase identifiers")
+    @Test
     func producesValidCamelCase() {
         let generator = SwiftEnumGenerator(enumName: "TestEnum")
         
@@ -117,7 +117,7 @@ struct SwiftEnumGeneratorTest {
     }
     
     
-    @Test("Generated enum has proper Swift syntax and structure")
+    @Test
     func hasProperSwiftSyntax() {
         let generator = SwiftEnumGenerator(enumName: "SyntaxTest")
         let keys = ["test_key_1", "test_key_2", "test_key_3"]
@@ -143,7 +143,7 @@ struct SwiftEnumGeneratorTest {
         #expect(openBraces == closeBraces)
     }
     
-    @Test("Generated code includes proper availability annotations")
+    @Test
     func includesAvailabilityAnnotations() {
         let generator = SwiftEnumGenerator(enumName: "AvailabilityTest")
         let result = generator.generateCode(allKeys: ["test"])
@@ -153,7 +153,7 @@ struct SwiftEnumGeneratorTest {
     }
     
     
-    @Test("Handles large numbers of localization keys efficiently")
+    @Test
     func handlesLargeDatasets() {
         let generator = SwiftEnumGenerator(enumName: "LargeEnum")
         
@@ -175,7 +175,7 @@ struct SwiftEnumGeneratorTest {
     }
     
     
-    @Test("Handles Unicode and international characters correctly")
+    @Test
     func handlesUnicodeCharacters() {
         let generator = SwiftEnumGenerator(enumName: "UnicodeEnum")
         
@@ -199,7 +199,7 @@ struct SwiftEnumGeneratorTest {
     }
     
     
-    @Test("Generated enum integrates properly with localization system")
+    @Test
     func integratesWithLocalizationSystem() {
         let generator = SwiftEnumGenerator(enumName: "IntegrationTest")
         let keys = ["common_app_name", "login_title", "profile_version"]
@@ -216,7 +216,7 @@ struct SwiftEnumGeneratorTest {
     }
     
     
-    @Test("Handles reserved Swift keywords correctly")
+    @Test
     func handlesReservedKeywords() {
         let generator = SwiftEnumGenerator(enumName: "KeywordTest")
         
@@ -237,7 +237,7 @@ struct SwiftEnumGeneratorTest {
         }
     }
     
-    @Test("Generates consistent output for same input")
+    @Test
     func generatesConsistentOutput() {
         let generator = SwiftEnumGenerator(enumName: "ConsistencyTest")
         let keys = ["test_1", "test_2", "test_3"]
@@ -258,7 +258,7 @@ struct SwiftEnumGeneratorTest {
     }
     
     
-    @Test("SwiftEnumGenerator includes proper generation metadata")
+    @Test
     func includesGenerationMetadata() {
         let generator = SwiftEnumGenerator(enumName: "MetadataTest")
         let result = generator.generateCode(allKeys: ["test"])

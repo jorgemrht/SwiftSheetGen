@@ -5,13 +5,13 @@ import Foundation
 @Suite("LocalizationGenerator Tests")
 struct LocalizationGeneratorTest {
     
-    @Test("LocalizationGenerator initializes with default config")
+    @Test
     func defaultInitialization() {
         let generator = LocalizationGenerator()
         #expect(type(of: generator) == LocalizationGenerator.self)
     }
     
-    @Test("LocalizationGenerator initializes with custom config")
+    @Test
     func customInitialization() {
         let config = LocalizationConfig(
             outputDirectory: "/tmp/test",
@@ -25,7 +25,7 @@ struct LocalizationGeneratorTest {
         #expect(type(of: generator) == LocalizationGenerator.self)
     }
     
-    @Test("LocalizationGenerator processes valid CSV successfully")
+    @Test
     func localizationGeneratorProcessesValidCSV() async throws {
         let tempDir = SharedTestData.createTempDirectory()
         defer { try? FileManager.default.removeItem(at: tempDir) }
@@ -60,7 +60,7 @@ struct LocalizationGeneratorTest {
         #expect(FileManager.default.fileExists(atPath: frDir.appendingPathComponent("Localizable.strings").path))
     }
     
-    @Test("LocalizationGenerator handles non-existent CSV file")
+    @Test
     func localizationGeneratorHandlesNonExistentCSV() async {
         let generator = LocalizationGenerator()
         
@@ -69,7 +69,7 @@ struct LocalizationGeneratorTest {
         }
     }
     
-    @Test("LocalizationGenerator handles empty CSV file")
+    @Test
     func localizationGeneratorHandlesEmptyCSV() async {
         let tempFile = SharedTestData.createTempFile(content: "")
         defer { try? FileManager.default.removeItem(at: tempFile) }
@@ -81,7 +81,7 @@ struct LocalizationGeneratorTest {
         }
     }
     
-    @Test("LocalizationGenerator handles CSV with invalid header structure")
+    @Test
     func localizationGeneratorHandlesInvalidHeader() async {
         let invalidCSV = "invalid,csv,content\nno,proper,headers,here"
         let tempFile = SharedTestData.createTempFile(content: invalidCSV)
@@ -94,7 +94,7 @@ struct LocalizationGeneratorTest {
         }
     }
     
-    @Test("LocalizationGenerator handles CSV with insufficient data")
+    @Test
     func localizationGeneratorHandlesInsufficientData() async {
         let headerOnlyCSV = """
         [Check],[View],[Item],[Type],es,en,fr
@@ -110,7 +110,7 @@ struct LocalizationGeneratorTest {
     }
     
     
-    @Test("LocalizationGenerator filters invalid rows correctly")
+    @Test
     func localizationGeneratorFiltersInvalidRows() async throws {
         let csvWithMixedRows = """
         [Check],[View],[Item],[Type],es,en,fr
@@ -154,7 +154,7 @@ struct LocalizationGeneratorTest {
     }
     
     
-    @Test("LocalizationGenerator generates strings catalog correctly")
+    @Test
     func localizationGeneratorGeneratesStringsCatalog() async throws {
         let tempDir = SharedTestData.createTempDirectory()
         defer { try? FileManager.default.removeItem(at: tempDir) }
@@ -189,7 +189,7 @@ struct LocalizationGeneratorTest {
         }
     }
     
-    @Test("LocalizationGenerator strings catalog includes all languages")
+    @Test
     func localizationGeneratorStringsCatalogIncludesAllLanguages() async throws {
         let csvWithMultipleLanguages = """
         [Check],[View],[Item],[Type],es,en,fr,de
@@ -230,7 +230,7 @@ struct LocalizationGeneratorTest {
     }
     
     
-    @Test("LocalizationGenerator processes template variables correctly")
+    @Test
     func localizationGeneratorProcessesTemplateVariables() async throws {
         let csvWithTemplates = """
         [Check],[View],[Item],[Type],es,en,fr
@@ -270,7 +270,7 @@ struct LocalizationGeneratorTest {
     }
     
     
-    @Test("LocalizationGenerator handles special characters correctly")
+    @Test
     func localizationGeneratorHandlesSpecialCharacters() async throws {
         let csvWithSpecialChars = """
         [Check],[View],[Item],[Type],es,en,fr
@@ -308,7 +308,7 @@ struct LocalizationGeneratorTest {
     }
     
     
-    @Test("LocalizationGenerator creates nested output directories")
+    @Test
     func localizationGeneratorCreatesNestedDirectories() async throws {
         let tempDir = SharedTestData.createTempDirectory()
         defer { try? FileManager.default.removeItem(at: tempDir) }
@@ -339,7 +339,7 @@ struct LocalizationGeneratorTest {
     }
     
     
-    @Test("LocalizationGenerator detects Tuist project correctly")
+    @Test
     func localizationGeneratorDetectsTuistProject() async throws {
         let tempDir = SharedTestData.createTempDirectory()
         defer { try? FileManager.default.removeItem(at: tempDir) }
@@ -377,7 +377,7 @@ struct LocalizationGeneratorTest {
     }
     
     
-    @Test("LocalizationGenerator respects cleanup configuration")
+    @Test
     func localizationGeneratorRespectsCleanupConfig() async throws {
         let tempDir = SharedTestData.createTempDirectory()
         defer { try? FileManager.default.removeItem(at: tempDir) }
@@ -405,7 +405,7 @@ struct LocalizationGeneratorTest {
     }
     
     
-    @Test("LocalizationGenerator integrates with mock Xcode project")
+    @Test
     func localizationGeneratorXcodeIntegration() async throws {
         let tempDir = SharedTestData.createTempDirectory()
         defer { try? FileManager.default.removeItem(at: tempDir) }

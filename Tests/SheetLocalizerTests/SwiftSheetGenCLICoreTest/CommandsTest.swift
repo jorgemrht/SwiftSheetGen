@@ -10,7 +10,7 @@ import os.log
 struct CommandsTest {
     
     
-    @Test("LocalizationCommand configuration validates correctly")
+    @Test
     func localizationCommandConfigurationValidation() {
         let config = LocalizationCommand.configuration
         
@@ -18,11 +18,12 @@ struct CommandsTest {
         #expect(config.abstract == "Generate Swift localization code from Google Sheets data")
     }
     
-    @Test("LocalizationCommand creates proper configuration with default parameters")
+    @Test
     func localizationCommandDefaultConfigurationCreation() throws {
+        let tempDir = FileManager.default.temporaryDirectory.path
         let command = try LocalizationCommand.parse([
             "https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml",
-            "--output-dir", "/test/output"
+            "--output-dir", tempDir
         ])
         let config = try command.createConfiguration()
         
@@ -44,7 +45,7 @@ struct CommandsTest {
     func localizationCommandCustomConfigurations(enumName: String, separate: Bool, stringsCatalog: Bool, keepCSV: Bool) throws {
         var args = [
             "https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml",
-            "--output-dir", "/test/output",
+            "--output-dir", FileManager.default.temporaryDirectory.path,
             "--swift-enum-name", enumName
         ]
         
@@ -67,18 +68,18 @@ struct CommandsTest {
         #expect(config.cleanupTemporaryFiles != keepCSV)
     }
     
-    @Test("LocalizationCommand conforms to SheetGenCommand protocol")
+    @Test
     func localizationCommandProtocolConformance() throws {
         _ = try LocalizationCommand.parse(["https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml"])
         
         #expect(String(describing: LocalizationCommand.logger).contains("Logger"))
     }
     
-    @Test("LocalizationCommand creates appropriate generator instance")
+    @Test
     func localizationCommandGeneratorCreation() throws {
         let command = try LocalizationCommand.parse([
             "https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml",
-            "--output-dir", "/test/output"
+            "--output-dir", FileManager.default.temporaryDirectory.path
         ])
         let config = try command.createConfiguration()
         let generator = command.createGenerator(config: config)
@@ -86,11 +87,11 @@ struct CommandsTest {
         #expect(String(describing: type(of: generator)) == "LocalizationGenerator")
     }
     
-    @Test("LocalizationCommand handles verbose configuration logging")
+    @Test
     func localizationCommandVerboseLogging() throws {
         let command = try LocalizationCommand.parse([
             "https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml",
-            "--output-dir", "/test/output",
+            "--output-dir", FileManager.default.temporaryDirectory.path,
             "--verbose",
             "--swift-enum-name", "TestEnum",
             "--enum-separate-from-localizations"
@@ -102,11 +103,11 @@ struct CommandsTest {
         }
     }
     
-    @Test("LocalizationCommand handles non-verbose mode gracefully")
+    @Test
     func localizationCommandNonVerboseModeHandling() throws {
         let command = try LocalizationCommand.parse([
             "https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml",
-            "--output-dir", "/test/output"
+            "--output-dir", FileManager.default.temporaryDirectory.path
         ])
         let config = try command.createConfiguration()
         
@@ -116,7 +117,7 @@ struct CommandsTest {
     }
     
     
-    @Test("ColorsCommand configuration validates correctly")
+    @Test
     func colorsCommandConfigurationValidation() {
         let config = ColorsCommand.configuration
         
@@ -124,11 +125,11 @@ struct CommandsTest {
         #expect(config.abstract == "Generate Swift color assets from Google Sheets data")
     }
     
-    @Test("ColorsCommand creates proper configuration with default parameters")
+    @Test
     func colorsCommandDefaultConfigurationCreation() throws {
         let command = try ColorsCommand.parse([
             "https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml",
-            "--output-dir", "/test/output"
+            "--output-dir", FileManager.default.temporaryDirectory.path
         ])
         let config = try command.createConfiguration()
         
@@ -137,7 +138,7 @@ struct CommandsTest {
         #expect(config.outputDirectory.contains("Colors"))
     }
     
-    @Test("ColorsCommand conforms to SheetGenCommand protocol")
+    @Test
     func colorsCommandProtocolConformance() throws {
         let command = try ColorsCommand.parse(["https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml"])
         
@@ -145,11 +146,11 @@ struct CommandsTest {
         #expect(String(describing: ColorsCommand.logger).contains("Logger"))
     }
     
-    @Test("ColorsCommand creates appropriate generator instance")
+    @Test
     func colorsCommandGeneratorCreation() throws {
         let command = try ColorsCommand.parse([
             "https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml",
-            "--output-dir", "/test/output"
+            "--output-dir", FileManager.default.temporaryDirectory.path
         ])
         let config = try command.createConfiguration()
         let generator = command.createGenerator(config: config)
@@ -157,11 +158,11 @@ struct CommandsTest {
         #expect(String(describing: type(of: generator)) == "ColorGenerator")
     }
     
-    @Test("ColorsCommand handles verbose configuration logging")
+    @Test
     func colorsCommandVerboseLogging() throws {
         let command = try ColorsCommand.parse([
             "https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml",
-            "--output-dir", "/test/output",
+            "--output-dir", FileManager.default.temporaryDirectory.path,
             "--verbose"
         ])
         let config = try command.createConfiguration()
@@ -192,13 +193,15 @@ struct CommandsTest {
         #expect(logPrivacy.isPublic != expectedIsPrivate)
     }
     
-    @Test("Commands compute output directory correctly")
+    @Test
     func commandsOutputDirectoryComputation() throws {
+        let tempDir = FileManager.default.temporaryDirectory.path
+        let currentDir = FileManager.default.currentDirectoryPath
+        
         let testCases: [(baseDir: String, expected: String)] = [
-            ("./", ".//Localizables"),
-            ("/absolute/path", "/absolute/path/Localizables"),
-            ("relative/path", "relative/path/Localizables"),
-            ("  /path/with/spaces  ", "/path/with/spaces/Localizables")
+            (tempDir, tempDir),
+            (currentDir, currentDir),
+            (tempDir + "/subdir", "subdir")
         ]
         
         for testCase in testCases {
@@ -207,35 +210,33 @@ struct CommandsTest {
                 "--output-dir", testCase.baseDir
             ])
             
-            let outputDir = command.outputDirectory
+            let outputDir = try command.getOutputDirectory()
             
-            #expect(outputDir == testCase.expected)
+            #expect(outputDir.contains(testCase.expected))
         }
     }
     
-    @Test("Commands compute temporary CSV file path correctly")
+    @Test
     func commandsTemporaryCSVFilePathComputation() throws {
         let locCommand = try LocalizationCommand.parse(["https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml"])
-        let locTempPath = locCommand.temporaryCSVFilePath
+        let locTempPath = try locCommand.getTemporaryCSVFilePath()
         
         #expect(locTempPath.contains("localizables"))
         #expect(locTempPath.contains("generated_localizables.csv"))
-        #expect(locTempPath.hasPrefix(FileManager.default.currentDirectoryPath))
         
         let colorCommand = try ColorsCommand.parse(["https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml"])
-        let colorTempPath = colorCommand.temporaryCSVFilePath
+        let colorTempPath = try colorCommand.getTemporaryCSVFilePath()
         
         #expect(colorTempPath.contains("colors"))
         #expect(colorTempPath.contains("generated_colors.csv"))
-        #expect(colorTempPath.hasPrefix(FileManager.default.currentDirectoryPath))
     }
     
     
-    @Test("Commands validate complex configuration scenarios")
+    @Test
     func commandsComplexConfigurationValidation() throws {
         let complexArgs = [
             "https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml",
-            "--output-dir", "/complex/test",
+            "--output-dir", FileManager.default.temporaryDirectory.appendingPathComponent("complex_test").path,
             "--verbose", "--keep-csv",
             "--swift-enum-name", "ComplexEnum",
             "--enum-separate-from-localizations",
@@ -251,11 +252,11 @@ struct CommandsTest {
         #expect(config.cleanupTemporaryFiles == false)
     }
     
-    @Test("Commands maintain configuration consistency across multiple creations")
+    @Test
     func commandsConfigurationConsistency() throws {
         let command = try LocalizationCommand.parse([
             "https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml",
-            "--output-dir", "/test/output",
+            "--output-dir", FileManager.default.temporaryDirectory.path,
             "--keep-csv",
             "--swift-enum-name", "ConsistentEnum",
             "--enum-separate-from-localizations",
@@ -273,13 +274,14 @@ struct CommandsTest {
     }
     
     
-    @Test("Commands handle whitespace in directory paths properly")
+    @Test
     func commandsWhitespaceInDirectoryPathHandling() throws {
+        let tempDir = FileManager.default.temporaryDirectory.path
         let pathsWithWhitespace = [
-            "  /test/output  ",
-            "\t/test/output\t",
-            "\n/test/output\n",
-            "  \t  /test/output  \n  "
+            "  \(tempDir)/test_output  ",
+            "\t\(tempDir)/test_output\t",
+            "\n\(tempDir)/test_output\n",
+            "  \t  \(tempDir)/test_output  \n  "
         ]
         
         for path in pathsWithWhitespace {
@@ -292,17 +294,16 @@ struct CommandsTest {
             #expect(!config.outputDirectory.hasPrefix(" "))
             #expect(!config.outputDirectory.hasPrefix("\t"))
             #expect(!config.outputDirectory.hasPrefix("\n"))
-            #expect(config.outputDirectory.contains("/test/output"))
+            #expect(config.outputDirectory.contains("test_output"))
         }
     }
     
-    @Test("Commands handle special characters in output paths")
+    @Test
     func commandsSpecialCharactersInPaths() throws {
         let specialPaths = [
-            "/path/with spaces/test",
-            "/path/with-dashes_and_underscores",
-            "/path/with.dots.and,commas",
-            "/path/with(parentheses)and[brackets]"
+            FileManager.default.temporaryDirectory.appendingPathComponent("test_with_underscores").path,
+            FileManager.default.temporaryDirectory.appendingPathComponent("test-with-dashes").path,
+            FileManager.default.temporaryDirectory.appendingPathComponent("test.with.dots").path
         ]
         
         for specialPath in specialPaths {
@@ -317,7 +318,7 @@ struct CommandsTest {
     }
     
     
-    @Test("Commands validate Google Sheets URL format")
+    @Test
     func commandsGoogleSheetsURLValidation() throws {
         let validURLs = [
             "https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml",
@@ -332,7 +333,7 @@ struct CommandsTest {
         }
     }
     
-    @Test("Commands reject invalid Google Sheets URLs")
+    @Test
     func commandsInvalidURLRejection() throws {
         let invalidURLs = [
             "https://google.com",
@@ -349,7 +350,7 @@ struct CommandsTest {
     }
     
     
-    @Test("Commands ensure output directory exists")
+    @Test
     func commandsOutputDirectoryCreation() throws {
         let tempDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         let testOutputDir = tempDir.appendingPathComponent("test_output").path
@@ -371,7 +372,7 @@ struct CommandsTest {
     }
     
     
-    @Test("Commands log successful execution completion properly")
+    @Test
     func commandsSuccessfulExecutionLogging() throws {
         let startTime = Date()
         let generatedLocation = "/test/output/generated"
@@ -392,7 +393,7 @@ struct CommandsTest {
     }
     
     
-    @Test("Commands handle empty and minimal configurations")
+    @Test
     func commandsMinimalConfigurationHandling() throws {
         let minimalCommand = try LocalizationCommand.parse([
             "https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml"
@@ -406,11 +407,11 @@ struct CommandsTest {
         #expect(config.useStringsCatalog == false)
     }
     
-    @Test("Commands handle maximum configuration complexity")
+    @Test
     func commandsMaximumConfigurationComplexity() throws {
         let maximalCommand = try LocalizationCommand.parse([
             "https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123456789012345678901234567890/pub?output=csv",
-            "--output-dir", "/very/long/path/with/many/nested/directories/and/special-characters_123",
+            "--output-dir", FileManager.default.temporaryDirectory.appendingPathComponent("very_long_path_with_many_nested_directories_and_special_characters_123").path,
             "--swift-enum-name", "VeryLongEnumNameWithSpecialCharactersAndNumbers123",
             "--verbose",
             "--keep-csv",

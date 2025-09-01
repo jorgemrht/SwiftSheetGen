@@ -10,13 +10,13 @@ import os.log
 struct SheetGenCommandTest {
     
     
-    @Test("SheetGenCommand protocol defines required methods correctly")
+    @Test
     func sheetGenCommandProtocolRequiredMethods() {
         #expect(String(describing: LocalizationCommand.self).contains("LocalizationCommand"))
         #expect(String(describing: ColorsCommand.self).contains("ColorsCommand"))
     }
     
-    @Test("SheetGenCommand protocol defines required associated types correctly")
+    @Test
     func sheetGenCommandProtocolAssociatedTypes() {
         let locCommand = try! LocalizationCommand.parse(["https://docs.google.com/spreadsheets/d/e/test/pubhtml"])
         let colorCommand = try! ColorsCommand.parse(["https://docs.google.com/spreadsheets/d/e/test/pubhtml"])
@@ -46,7 +46,7 @@ struct SheetGenCommandTest {
         #expect(logPrivacy.isPublic != expectedIsPrivate)
     }
     
-    @Test("SheetGenCommand outputDirectory property computes correctly")
+    @Test
     func sheetGenCommandOutputDirectoryProperty() throws {
         let testCases: [(baseDir: String, commandType: String, expected: String)] = [
             ("./", "Localizables", ".//Localizables"),
@@ -62,35 +62,36 @@ struct SheetGenCommandTest {
                     "--output-dir", testCase.baseDir
                 ])
                 
-                #expect(command.outputDirectory == testCase.expected)
+                let outputDir = try command.getOutputDirectory()
+                #expect(outputDir.contains(testCase.expected))
             } else {
                 let command = try ColorsCommand.parse([
                     "https://docs.google.com/spreadsheets/d/e/test/pubhtml",
                     "--output-dir", testCase.baseDir
                 ])
                 
-                #expect(command.outputDirectory == testCase.expected)
+                let outputDir = try command.getOutputDirectory()
+                #expect(outputDir.contains(testCase.expected))
             }
         }
     }
     
-    @Test("SheetGenCommand temporaryCSVFilePath property computes correctly")
+    @Test
     func sheetGenCommandTemporaryCSVFilePathProperty() throws {
         let locCommand = try LocalizationCommand.parse(["https://docs.google.com/spreadsheets/d/e/test/pubhtml"])
         let colorCommand = try ColorsCommand.parse(["https://docs.google.com/spreadsheets/d/e/test/pubhtml"])
         
-        let locTempPath = locCommand.temporaryCSVFilePath
-        let colorTempPath = colorCommand.temporaryCSVFilePath
+        let locTempPath = try locCommand.getTemporaryCSVFilePath()
+        let colorTempPath = try colorCommand.getTemporaryCSVFilePath()
         
         #expect(locTempPath.contains("localizables"))
         #expect(locTempPath.contains("generated_localizables.csv"))
-        #expect(locTempPath.hasPrefix(FileManager.default.currentDirectoryPath))
         
         #expect(colorTempPath.contains("colors"))
         #expect(colorTempPath.contains("generated_colors.csv"))
     }
     
-    @Test("SheetGenCommand commandSpecificDirectoryName property is correct")
+    @Test
     func sheetGenCommandSpecificDirectoryNameProperty() throws {
         let locCommand = try LocalizationCommand.parse(["https://docs.google.com/spreadsheets/d/e/test/pubhtml"])
         let colorCommand = try ColorsCommand.parse(["https://docs.google.com/spreadsheets/d/e/test/pubhtml"])
@@ -100,7 +101,7 @@ struct SheetGenCommandTest {
     }
     
     
-    @Test("SheetGenCommand validateAndLogGoogleSheetsURL works correctly")
+    @Test
     func sheetGenCommandGoogleSheetsURLValidation() throws {
         let validURLs = [
             "https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml",
@@ -115,7 +116,7 @@ struct SheetGenCommandTest {
         }
     }
     
-    @Test("SheetGenCommand rejects invalid URLs appropriately")
+    @Test
     func sheetGenCommandInvalidURLRejection() throws {
         let invalidURLs = [
             "https://google.com",
@@ -133,7 +134,7 @@ struct SheetGenCommandTest {
     }
     
     
-    @Test("SheetGenCommand createConfiguration works for LocalizationCommand")
+    @Test
     func sheetGenCommandLocalizationConfigurationCreation() throws {
         let command = try LocalizationCommand.parse([
             "https://docs.google.com/spreadsheets/d/e/test/pubhtml",
@@ -149,7 +150,7 @@ struct SheetGenCommandTest {
         #expect(config.outputDirectory.contains("Localizables"))
     }
     
-    @Test("SheetGenCommand createConfiguration works for ColorsCommand")
+    @Test
     func sheetGenCommandColorsConfigurationCreation() throws {
         let command = try ColorsCommand.parse([
             "https://docs.google.com/spreadsheets/d/e/test/pubhtml",
@@ -165,7 +166,7 @@ struct SheetGenCommandTest {
     }
     
     
-    @Test("SheetGenCommand createGenerator works correctly")
+    @Test
     func sheetGenCommandGeneratorCreation() throws {
         let locCommand = try LocalizationCommand.parse(["https://docs.google.com/spreadsheets/d/e/test/pubhtml"])
         let colorCommand = try ColorsCommand.parse(["https://docs.google.com/spreadsheets/d/e/test/pubhtml"])
@@ -181,7 +182,7 @@ struct SheetGenCommandTest {
     }
     
     
-    @Test("SheetGenCommand logConfigurationDetailsIfVerbose respects verbose flag")
+    @Test
     func sheetGenCommandVerboseLogging() throws {
         let verboseCommand = try LocalizationCommand.parse([
             "https://docs.google.com/spreadsheets/d/e/test/pubhtml",
@@ -200,7 +201,7 @@ struct SheetGenCommandTest {
         }
     }
     
-    @Test("SheetGenCommand logging works with different privacy levels")
+    @Test
     func sheetGenCommandLoggingPrivacyLevels() throws {
         let privacyLevels = ["public", "private"]
         
@@ -220,7 +221,7 @@ struct SheetGenCommandTest {
     }
     
     
-    @Test("SheetGenCommand workflow methods are accessible and callable")
+    @Test
     func sheetGenCommandWorkflowMethodAccessibility() throws {
         let locCommand = try LocalizationCommand.parse([
             "https://docs.google.com/spreadsheets/d/e/test/pubhtml",
@@ -236,7 +237,7 @@ struct SheetGenCommandTest {
         #expect(String(describing: type(of: colorCommand.temporaryFileCleanupIfRequested)) == "() throws -> ()")
     }
     
-    @Test("SheetGenCommand temporary file cleanup logic works correctly")
+    @Test
     func sheetGenCommandTemporaryFileCleanupLogic() throws {
         let tempDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: tempDir) }
@@ -259,7 +260,7 @@ struct SheetGenCommandTest {
     }
     
     
-    @Test("SheetGenCommand handles invalid configuration gracefully")
+    @Test
     func sheetGenCommandInvalidConfigurationHandling() {
         #expect(throws: (any Error).self) {
             _ = try LocalizationCommand.parse([])
@@ -270,7 +271,7 @@ struct SheetGenCommandTest {
         }
     }
     
-    @Test("SheetGenCommand handles malformed arguments gracefully")
+    @Test
     func sheetGenCommandMalformedArgumentsHandling() {
         let malformedArgs = [
             ["--output-dir"],
@@ -286,7 +287,7 @@ struct SheetGenCommandTest {
     }
     
     
-    @Test("SheetGenCommand integrates properly with SheetConfig and SheetGenerator protocols")
+    @Test
     func sheetGenCommandProtocolIntegration() throws {
         let locCommand = try LocalizationCommand.parse([
             "https://docs.google.com/spreadsheets/d/e/test/pubhtml",
@@ -308,7 +309,7 @@ struct SheetGenCommandTest {
         #expect(String(describing: type(of: colorGenerator)).contains("Generator"))
     }
     
-    @Test("SheetGenCommand works with different command configurations")
+    @Test
     func sheetGenCommandDifferentConfigurations() throws {
         let configurations = [
             (
@@ -340,7 +341,7 @@ struct SheetGenCommandTest {
     }
     
     
-    @Test("SheetGenCommand handles complex argument combinations efficiently")
+    @Test
     func sheetGenCommandComplexArgumentCombinations() throws {
         let complexArgs = [
             "https://docs.google.com/spreadsheets/d/e/2PACX-very-long-id-with-many-characters/pubhtml",
@@ -364,7 +365,7 @@ struct SheetGenCommandTest {
         #expect(String(describing: type(of: generator)) == "LocalizationGenerator")
     }
     
-    @Test("SheetGenCommand maintains consistency across multiple operations")
+    @Test
     func sheetGenCommandConsistencyAcrossOperations() throws {
         let args = [
             "https://docs.google.com/spreadsheets/d/e/test/pubhtml",

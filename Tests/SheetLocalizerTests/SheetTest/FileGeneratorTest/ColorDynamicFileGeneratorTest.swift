@@ -6,7 +6,7 @@ import Foundation
 struct ColorDynamicFileGeneratorTest {
     
     
-    @Test("ColorDynamicFileGenerator creates comprehensive dynamic color support")
+    @Test
     func generateDynamicColorCode() {
         let generator = ColorDynamicFileGenerator()
         let result = generator.generateCode()
@@ -23,7 +23,7 @@ struct ColorDynamicFileGeneratorTest {
         #expect(result.contains("import UIKit"))
     }
     
-    @Test("Generated code includes all required Color extension initializers")
+    @Test
     func includesAllColorExtensions() {
         let generator = ColorDynamicFileGenerator()
         let result = generator.generateCode()
@@ -46,7 +46,7 @@ struct ColorDynamicFileGeneratorTest {
     }
     
     
-    @Test("Generated code includes proper UIKit dynamic color support")
+    @Test
     func includesUIKitDynamicColorSupport() {
         let generator = ColorDynamicFileGenerator()
         let result = generator.generateCode()
@@ -73,7 +73,7 @@ struct ColorDynamicFileGeneratorTest {
     }
     
     
-    @Test("Generated code includes proper AppKit dynamic color support")
+    @Test
     func includesAppKitDynamicColorSupport() {
         let generator = ColorDynamicFileGenerator()
         let result = generator.generateCode()
@@ -96,7 +96,7 @@ struct ColorDynamicFileGeneratorTest {
     }
     
     
-    @Test("Generated code includes proper error handling and assertions")
+    @Test
     func includesErrorHandling() {
         let generator = ColorDynamicFileGenerator()
         let result = generator.generateCode()
@@ -109,7 +109,7 @@ struct ColorDynamicFileGeneratorTest {
     }
     
     
-    @Test("Generated code has proper structure and formatting")
+    @Test
     func hasProperCodeStructure() {
         let generator = ColorDynamicFileGenerator()
         let result = generator.generateCode()
@@ -128,7 +128,7 @@ struct ColorDynamicFileGeneratorTest {
     }
     
     
-    @Test("Generated code includes proper platform compilation directives")
+    @Test
     func includesProperCompilationDirectives() {
         let generator = ColorDynamicFileGenerator()
         let result = generator.generateCode()
@@ -146,7 +146,7 @@ struct ColorDynamicFileGeneratorTest {
     }
     
     
-    @Test("Generated code compiles with valid Swift syntax")
+    @Test
     func generatesValidSwiftSyntax() {
         let generator = ColorDynamicFileGenerator()
         let result = generator.generateCode()
@@ -167,7 +167,7 @@ struct ColorDynamicFileGeneratorTest {
     }
     
     
-    @Test("Generated code contains all required method signatures")
+    @Test
     func containsRequiredMethodSignatures() {
         let generator = ColorDynamicFileGenerator()
         let result = generator.generateCode()
@@ -192,7 +192,7 @@ struct ColorDynamicFileGeneratorTest {
         }
     }
     
-    @Test("Generated code handles all appearance cases correctly")
+    @Test
     func handlesAllAppearanceCases() {
         let generator = ColorDynamicFileGenerator()
         let result = generator.generateCode()

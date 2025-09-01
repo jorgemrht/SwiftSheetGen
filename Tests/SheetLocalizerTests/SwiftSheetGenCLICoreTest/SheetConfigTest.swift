@@ -7,7 +7,7 @@ import Foundation
 struct SheetConfigTest {
     
     
-    @Test("LocalizationConfig implements SheetConfig protocol properly")
+    @Test
     func localizationConfigSheetConfigImplementation() {
         let config = LocalizationConfig.default
         
@@ -30,7 +30,7 @@ struct SheetConfigTest {
         #expect(customConfig.cleanupTemporaryFiles == false)
     }
     
-    @Test("ColorConfig implements SheetConfig protocol properly")
+    @Test
     func colorConfigSheetConfigImplementation() {
         let config = ColorConfig.default
         
@@ -50,7 +50,7 @@ struct SheetConfigTest {
     }
     
     
-    @Test("SheetConfig protocol properties handle various path formats")
+    @Test
     func sheetConfigPathFormatHandling() {
         let pathFormats = [
             "./relative",
@@ -81,7 +81,7 @@ struct SheetConfigTest {
         }
     }
     
-    @Test("SheetConfig protocol properties handle various CSV file names")
+    @Test
     func sheetConfigCSVFileNameHandling() {
         let csvFileNames = [
             "simple.csv",
@@ -113,7 +113,7 @@ struct SheetConfigTest {
         }
     }
     
-    @Test("SheetConfig protocol properties handle cleanup flags correctly")
+    @Test
     func sheetConfigCleanupFlagsHandling() {
         let cleanupValues = [true, false]
         
@@ -138,7 +138,7 @@ struct SheetConfigTest {
     }
     
     
-    @Test("SheetConfig protocol works correctly in generic contexts")
+    @Test
     func sheetConfigGenericContextUsage() {
         func processConfig<T: SheetConfig>(_ config: T) -> (String, String, Bool) {
             return (config.outputDirectory, config.csvFileName, config.cleanupTemporaryFiles)
@@ -159,7 +159,7 @@ struct SheetConfigTest {
         #expect(colorResult.2 == true)
     }
     
-    @Test("Protocol type erasure works correctly for heterogeneous collections")
+    @Test
     func sheetConfigTypeErasureHeterogeneousCollections() {
         let configs: [any SheetConfig] = [
             LocalizationConfig.default,
@@ -193,7 +193,7 @@ struct SheetConfigTest {
         #expect(outputDirectories.contains("/custom/colors"))
     }
     
-    @Test("Protocol existential types maintain type safety")
+    @Test
     func sheetConfigExistentialTypeSafety() {
         let locConfig: any SheetConfig = LocalizationConfig.default
         let colorConfig: any SheetConfig = ColorConfig.default
@@ -215,7 +215,7 @@ struct SheetConfigTest {
     }
     
     
-    @Test("SheetConfig implementations are consistent across different instances")
+    @Test
     func sheetConfigImplementationConsistency() {
         let locConfig1 = LocalizationConfig.default
         let locConfig2 = LocalizationConfig.default
@@ -232,7 +232,7 @@ struct SheetConfigTest {
         #expect(colorConfig1.cleanupTemporaryFiles == colorConfig2.cleanupTemporaryFiles)
     }
     
-    @Test("SheetConfig implementations handle custom configurations correctly")
+    @Test
     func sheetConfigCustomConfigurationHandling() {
         let customParams = [
             (dir: "/path1", csv: "file1.csv", cleanup: true),
@@ -267,7 +267,7 @@ struct SheetConfigTest {
     }
     
     
-    @Test("SheetConfig protocol handles edge case values properly")
+    @Test
     func sheetConfigEdgeCaseValues() {
         let edgeCases = [
             (dir: "", csv: "", cleanup: true),
@@ -298,7 +298,7 @@ struct SheetConfigTest {
         }
     }
     
-    @Test("SheetConfig protocol properties are stable across multiple accesses")
+    @Test
     func sheetConfigPropertyStability() {
         let locConfig = LocalizationConfig.custom(
             outputDirectory: "/stable/test",
@@ -326,7 +326,7 @@ struct SheetConfigTest {
     }
     
     
-    @Test("SheetConfig protocol implementations are memory efficient")
+    @Test
     func sheetConfigMemoryEfficiency() {
         var configs: [any SheetConfig] = []
         
@@ -360,7 +360,7 @@ struct SheetConfigTest {
         }
     }
     
-    @Test("SheetConfig protocol works with concurrent access")
+    @Test
     func sheetConfigConcurrentAccess() async {
         let locConfig = LocalizationConfig.default
         let colorConfig = ColorConfig.default

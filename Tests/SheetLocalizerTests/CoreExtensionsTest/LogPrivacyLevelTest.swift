@@ -45,21 +45,21 @@ struct LogPrivacyLevelTest {
     }
     
     
-    @Test("LogPrivacyLevel properties are mutually exclusive")
+    @Test
     func logPrivacyLevelMutualExclusivity() {
         for level in [LogPrivacyLevel.private, LogPrivacyLevel.public] {
             #expect(level.isPrivate != level.isPublic)
         }
     }
     
-    @Test("LogPrivacyLevel enum cases have correct raw values")
+    @Test
     func logPrivacyLevelRawValues() {
         #expect(LogPrivacyLevel.private.rawValue == "private")
         #expect(LogPrivacyLevel.public.rawValue == "public")
     }
     
     
-    @Test("LogPrivacyLevel handles whitespace and special characters in initialization")
+    @Test
     func logPrivacyLevelWhitespaceHandling() {
         let spacedPrivate = LogPrivacyLevel(from: "  private  ")
         #expect(spacedPrivate == LogPrivacyLevel.public)
@@ -71,7 +71,7 @@ struct LogPrivacyLevelTest {
         #expect(newlinePrivate == LogPrivacyLevel.public)
     }
     
-    @Test("LogPrivacyLevel initialization is case-insensitive for valid values")
+    @Test
     func logPrivacyLevelCaseInsensitivity() {
         let variations = ["private", "PRIVATE", "Private", "pRiVaTe", "PrIvAtE"]
         
@@ -83,7 +83,7 @@ struct LogPrivacyLevelTest {
         }
     }
     
-    @Test("LogPrivacyLevel defaults to public for invalid inputs")
+    @Test
     func logPrivacyLevelDefaultBehavior() {
         let invalidInputs = [
             "invalid", "unknown", "protected", "internal",
@@ -99,7 +99,7 @@ struct LogPrivacyLevelTest {
     }
     
     
-    @Test("LogPrivacyLevel works correctly in conditional logic")
+    @Test
     func logPrivacyLevelConditionalLogic() {
         let privateLevel = LogPrivacyLevel(from: "private")
         let publicLevel = LogPrivacyLevel(from: "public")
@@ -119,7 +119,7 @@ struct LogPrivacyLevelTest {
         #expect(publicCount == 1)
     }
     
-    @Test("LogPrivacyLevel enum conforms to expected protocols")
+    @Test
     func logPrivacyLevelProtocolConformance() {
         #expect(LogPrivacyLevel(rawValue: "private") == LogPrivacyLevel.private)
         #expect(LogPrivacyLevel(rawValue: "public") == LogPrivacyLevel.public)

@@ -61,7 +61,7 @@ struct ColorFileGeneratorTest {
     
     
     
-    @Test("ColorDynamicFileGenerator creates comprehensive dynamic color support")
+    @Test
     func colorDynamicFileGeneratorCodeGeneration() {
         let code = ColorDynamicFileGenerator().generateCode()
 

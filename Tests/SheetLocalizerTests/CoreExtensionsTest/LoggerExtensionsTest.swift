@@ -7,7 +7,7 @@ import os.log
 struct LoggerExtensionsTest {
     
     
-    @Test("Logger static instances are properly configured and accessible")
+    @Test
     func loggerStaticConfiguration() {
         #expect(throws: Never.self) {
             Logger.csvDownloader.info("Test csvDownloader")
@@ -23,7 +23,7 @@ struct LoggerExtensionsTest {
     }
     
     
-    @Test("Logger basic logging methods execute without throwing")
+    @Test
     func loggerBasicMethods() {
         let logger = Logger(subsystem: "com.test.logger", category: "testing")
         
@@ -38,7 +38,7 @@ struct LoggerExtensionsTest {
     }
     
     
-    @Test("Logger.logInfo handles both private and public information correctly")
+    @Test
     func loggerLogInfoMethod() {
         let logger = Logger(subsystem: "com.test.logger", category: "info")
         
@@ -48,7 +48,7 @@ struct LoggerExtensionsTest {
         }
     }
     
-    @Test("Logger.logError handles both private and public error information correctly")
+    @Test
     func loggerLogErrorMethod() {
         let logger = Logger(subsystem: "com.test.logger", category: "error")
         
@@ -58,7 +58,7 @@ struct LoggerExtensionsTest {
         }
     }
     
-    @Test("Logger.logNetworkRequest logs network operations correctly")
+    @Test
     func loggerNetworkRequestMethod() {
         let logger = Logger(subsystem: "com.test.logger", category: "network")
         
@@ -79,7 +79,7 @@ struct LoggerExtensionsTest {
         }
     }
     
-    @Test("Logger.logFileOperation logs file system operations correctly")
+    @Test
     func loggerFileOperationMethod() {
         let logger = Logger(subsystem: "com.test.logger", category: "file")
         
@@ -90,7 +90,7 @@ struct LoggerExtensionsTest {
         }
     }
     
-    @Test("Logger.logCSVProcessing logs CSV processing metrics correctly")
+    @Test
     func loggerCSVProcessingMethod() {
         let logger = Logger(subsystem: "com.test.logger", category: "csv")
         
@@ -116,7 +116,7 @@ struct LoggerExtensionsTest {
     }
     
     
-    @Test("Logger methods handle empty and nil values correctly")
+    @Test
     func loggerEdgeCases() {
         let logger = Logger(subsystem: "com.test.logger", category: "edge")
         
@@ -129,7 +129,7 @@ struct LoggerExtensionsTest {
         }
     }
     
-    @Test("Logger methods handle very large values correctly")
+    @Test
     func loggerLargeValues() {
         let logger = Logger(subsystem: "com.test.logger", category: "large")
         let largeString = String(repeating: "a", count: 10000)
@@ -142,7 +142,7 @@ struct LoggerExtensionsTest {
     }
     
     
-    @Test("Logger.logFatal method exists and has correct signature")
+    @Test
     func loggerFatalMethodAvailability() {
         let logger = Logger(subsystem: "com.test.logger", category: "fatal")
         
@@ -151,7 +151,7 @@ struct LoggerExtensionsTest {
         }
     }
     
-    @Test("Logger methods handle special character inputs")
+    @Test
     func loggerSpecialCharacters() {
         let logger = Logger(subsystem: "com.test.logger", category: "special")
         let specialChars = "Special: !@#$%^&*()_+-=[]{}|;':\",./<>?"
@@ -165,7 +165,7 @@ struct LoggerExtensionsTest {
         }
     }
     
-    @Test("Logger methods handle boundary values")
+    @Test
     func loggerBoundaryValues() {
         let logger = Logger(subsystem: "com.test.logger", category: "boundary")
         
@@ -181,7 +181,7 @@ struct LoggerExtensionsTest {
     }
     
     
-    @Test("Logger methods perform efficiently with concurrent access")
+    @Test
     func loggerConcurrentAccess() async {
         let logger = Logger(subsystem: "com.test.logger", category: "concurrent")
         
@@ -198,7 +198,7 @@ struct LoggerExtensionsTest {
         #expect(Bool(true))
     }
     
-    @Test("Logger static instances are thread-safe")
+    @Test
     func loggerThreadSafety() async {
         await withTaskGroup(of: Void.self) { group in
             let loggers = [
@@ -221,7 +221,7 @@ struct LoggerExtensionsTest {
     }
     
     
-    @Test("Logger extensions integrate correctly with standard logging")
+    @Test
     func loggerIntegration() {
         let logger = Logger(subsystem: "com.test.integration", category: "test")
         
@@ -234,7 +234,7 @@ struct LoggerExtensionsTest {
         }
     }
     
-    @Test("Logger ByteCountFormatter integration in file operations")
+    @Test
     func loggerByteCountFormatting() {
         let logger = Logger(subsystem: "com.test.logger", category: "bytes")
         
@@ -247,7 +247,7 @@ struct LoggerExtensionsTest {
         }
     }
     
-    @Test("Logger subsystem consistency across all static loggers")
+    @Test
     func loggerSubsystemConsistency() {
         let loggerCategories = [
             ("CSV.Download", Logger.csvDownloader),

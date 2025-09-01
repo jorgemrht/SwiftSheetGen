@@ -192,7 +192,7 @@ struct GeneratorHelperTest {
         try await GeneratorHelper.cleanupTemporaryFile(at: tempFile.path, logger: logger)
     }
     
-    @Test("Cleanup temporary directory")
+    @Test
     func cleanupTemporaryDirectory() async throws {
         let tempDir = SharedTestData.createTempDirectory()
         

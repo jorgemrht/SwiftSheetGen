@@ -22,7 +22,7 @@ struct SharedOptionsTest {
         #expect(options.logPrivacyLevel == "public")
     }
     
-    @Test("SharedOptions handles URL parsing with additional CLI parameters")
+    @Test
     func sharedOptionsComplexParameterCombinations() throws {
         let arguments = [
             "https://docs.google.com/spreadsheets/d/e/2PACX-1vTest123/pubhtml",
@@ -41,7 +41,7 @@ struct SharedOptionsTest {
         #expect(options.logPrivacyLevel == "private")
     }
     
-    @Test("SharedOptions validates required URL argument presence")
+    @Test
     func sharedOptionsRequiredArgumentValidation() {
         #expect(throws: (any Error).self) {
             _ = try SharedOptions.parse([])
@@ -98,7 +98,7 @@ struct SharedOptionsTest {
         }
     }
     
-    @Test("SharedOptions handles special characters in paths and URLs")
+    @Test
     func sharedOptionsSpecialCharacterHandling() throws {
         let urlWithParams = "https://docs.google.com/spreadsheets/d/test123/edit?usp=sharing&gid=0#special"
         let pathWithSpaces = "/path/with special chars/and-symbols_123"
@@ -112,7 +112,7 @@ struct SharedOptionsTest {
         #expect(options.outputDir == pathWithSpaces)
     }
     
-    @Test("SharedOptions handles edge cases in URL format")
+    @Test
     func sharedOptionsURLEdgeCaseHandling() throws {
         let edgeCaseURLs = [
             "https://docs.google.com/spreadsheets/d//edit",
@@ -144,7 +144,7 @@ struct SharedOptionsTest {
         #expect(options.logPrivacyLevel == expectedLevel)
     }
     
-    @Test("SharedOptions handles privacy level edge cases")
+    @Test
     func sharedOptionsPrivacyLevelEdgeCases() throws {
         let edgeCases = [
             "",
@@ -167,7 +167,7 @@ struct SharedOptionsTest {
     }
     
     
-    @Test("SharedOptions maintains argument order independence")
+    @Test
     func sharedOptionsArgumentOrderIndependence() throws {
         let url = "https://docs.google.com/spreadsheets/d/test/edit"
         
@@ -186,7 +186,7 @@ struct SharedOptionsTest {
         #expect(options1.logPrivacyLevel == options2.logPrivacyLevel)
     }
     
-    @Test("SharedOptions handles mixed argument positioning")
+    @Test
     func sharedOptionsMixedArgumentPositioning() throws {
         let variations = [
             ["https://test.com", "--verbose", "--output-dir", "/path", "--keep-csv"],
@@ -205,7 +205,7 @@ struct SharedOptionsTest {
     }
     
     
-    @Test("SharedOptions default values consistency")
+    @Test
     func sharedOptionsDefaultValueValidation() throws {
         let minimalOptions = try SharedOptions.parse(["https://example.com/sheet"])
         
@@ -215,7 +215,7 @@ struct SharedOptionsTest {
         #expect(minimalOptions.logPrivacyLevel == "public")
     }
     
-    @Test("SharedOptions default values with partial configuration")
+    @Test
     func sharedOptionsPartialConfigurationDefaults() throws {
         let partialConfigs = [
             (args: ["https://test.com", "--verbose"], expectVerbose: true, expectKeepCSV: false),
@@ -232,7 +232,7 @@ struct SharedOptionsTest {
     }
     
     
-    @Test("SharedOptions validates URL parameter types")
+    @Test
     func sharedOptionsURLParameterTypeValidation() throws {
         let validURLs = [
             "https://docs.google.com/spreadsheets/d/e/test/pubhtml",
@@ -247,7 +247,7 @@ struct SharedOptionsTest {
         }
     }
     
-    @Test("SharedOptions validates output directory parameter types")
+    @Test
     func sharedOptionsOutputDirectoryParameterValidation() throws {
         let validPaths = [
             "/absolute/path",
@@ -267,14 +267,14 @@ struct SharedOptionsTest {
     }
     
     
-    @Test("SharedOptions help text accessibility")
+    @Test
     func sharedOptionsHelpDocumentation() {
         #expect(throws: (any Error).self) {
             _ = try SharedOptions.parse(["--help"])
         }
     }
     
-    @Test("SharedOptions handles invalid flag combinations gracefully")
+    @Test
     func sharedOptionsInvalidFlagCombinations() {
         let invalidCombinations = [
             ["--help", "https://test.com"],
@@ -290,7 +290,7 @@ struct SharedOptionsTest {
     }
     
     
-    @Test("SharedOptions handles very long argument values")
+    @Test
     func sharedOptionsLongArgumentValues() throws {
         let longURL = "https://docs.google.com/spreadsheets/d/e/" + String(repeating: "a", count: 1000) + "/pubhtml"
         let longPath = "/" + String(repeating: "path/", count: 100) + "end"
@@ -307,7 +307,7 @@ struct SharedOptionsTest {
         #expect(options.logPrivacyLevel == longPrivacyLevel)
     }
     
-    @Test("SharedOptions handles unicode and special characters")
+    @Test
     func sharedOptionsUnicodeAndSpecialCharacters() throws {
         let unicodeURL = "https://docs.google.com/spreadsheets/d/e/tést-ũnicõdè-123/pubhtml"
         let unicodePath = "/path/with/ünicødé/chàracters/测试"
@@ -321,7 +321,7 @@ struct SharedOptionsTest {
         #expect(options.outputDir == unicodePath)
     }
     
-    @Test("SharedOptions parsing is consistent across multiple invocations")
+    @Test
     func sharedOptionsParsingConsistency() throws {
         let args = [
             "https://docs.google.com/spreadsheets/d/e/2PACX-consistent/pubhtml",
